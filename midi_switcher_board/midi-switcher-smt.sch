@@ -12144,7 +12144,7 @@ With round pins</description>
 <wire x1="2.1082" y1="5.1054" x2="2.5654" y2="4.6482" width="0.2032" layer="51"/>
 <wire x1="2.5654" y1="4.6482" x2="2.5654" y2="3.937" width="0.2032" layer="51"/>
 <wire x1="2.5654" y1="3.937" x2="-2.5654" y2="3.937" width="0.2032" layer="51"/>
-<smd name="2" x="0" y="2.5" dx="5.4" dy="6.2" layer="1"/>
+<smd name="2" x="-1.778" y="4.405" dx="2.286" dy="2.54" layer="1"/>
 <smd name="1" x="-2.28" y="-4.8" dx="1" dy="1.6" layer="1"/>
 <smd name="3" x="2.28" y="-4.8" dx="1" dy="1.6" layer="1"/>
 <text x="-3.81" y="-2.54" size="1.27" layer="25" rot="R90">&gt;NAME</text>
@@ -12160,6 +12160,10 @@ With round pins</description>
 <vertex x="2.5654" y="4.6482"/>
 <vertex x="2.5654" y="3.937"/>
 </polygon>
+<rectangle x1="-2.794" y1="-0.762" x2="2.794" y2="5.715" layer="1"/>
+<smd name="4" x="1.778" y="4.405" dx="2.286" dy="2.54" layer="1"/>
+<smd name="5" x="-1.778" y="0.595" dx="2.286" dy="2.54" layer="1"/>
+<smd name="6" x="1.778" y="0.595" dx="2.286" dy="2.54" layer="1"/>
 </package>
 </packages>
 <symbols>
