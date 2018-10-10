@@ -10,8 +10,6 @@
 // TYPE DEFS
 //
 
-
-
 // enumeration of the different trigger conditions for a switch
 enum {
 	COND_NONE,			// no external trigger
@@ -58,11 +56,11 @@ enum {
 //////////////////////////////////////////////////////////////
 // switch configuration
 typedef struct {
-	byte cond_type;			// the type of external condition
+	byte cond_type;				// the type of external condition
 	union {
 		NOTE_COND note;
 		CC_COND cc;
-	} cond;					// parameters associated with trigger condition
+	} cond;						// parameters associated with trigger condition
 
 	byte dur_mod_type;			// type of external modulation of duration
 	union {
@@ -74,8 +72,8 @@ typedef struct {
 		CC_MOD cc;
 	} pwm_mod;
 
-	//byte initial_output;
-	//byte invert_output;	
+	byte initial_output;	// the output on reset 
+	byte invert_output;		// whether the switch output is inverted
 	byte sustain;			// sustain ON/OFF flag
 	unsigned int hold_time;	// hold time in ms
 } SWITCH_CONFIG;
@@ -83,11 +81,10 @@ typedef struct {
 //////////////////////////////////////////////////////////////
 // current switch status
 typedef struct {
-	byte is_triggered;		// whether trigger condition exists
-	byte state;				// switch cycle state
-//	byte duty;				// 7 bit current duty cycle	
-	byte max_duty;			// the maximum duty cycle
-	unsigned int max_hold_time;	// hold time in ms
+	byte is_triggered;			// whether trigger condition exists
+	byte state;					// switch cycle state
+	byte cur_duty;				// the maximum duty cycle
+	unsigned int cur_hold_time;	// hold time in ms
 	unsigned int hold_timeout;	// milliseconds left in hold mode
 } SWITCH_STATUS;
 
@@ -100,7 +97,6 @@ typedef struct {
 //
 // LOCAL DATA
 //
-static byte l_pwm_phase = 0;
 static SWITCH_STATUS l_status[SWITCH_MAX];
 static SWITCH_CONFIG l_cfg[SWITCH_MAX];
 static PGM_CONFIG l_pgm[PGM_MAX];
@@ -108,31 +104,13 @@ static PGM_CONFIG l_pgm[PGM_MAX];
 // PRIVATE FUNCTIONS
 //
 
-/*
-//////////////////////////////////////////////////////////////
-// Directly set the output pin for a given port
-static void set_output(byte which, byte state) {
-	switch(which) {
-		case 0: P_OUTA = !!state; break;
-		case 1: P_OUTB = !!state; break;
-		case 2: P_OUTC = !!state; break;
-		case 3: P_OUTD = !!state; break;
-		case 4: P_OUTE = !!state; break;
-		case 5: P_OUTF = !!state; break;
-		case 6: P_OUTG = !!state; break;
-		case 7: P_OUTH = !!state; break;
-	}
-}
-*/
-
-
 //////////////////////////////////////////////////////////////
 // call when trigger condition begins
 static void trigger(byte which) {
 
 	SWITCH_STATUS *pstatus = &l_status[which];	
 	SWITCH_CONFIG *pcfg = &l_cfg[which];	
-	
+	byte duty = pstatus->cur_duty;
 	// are we responding to program change?
 	if(pcfg->cond_type == COND_PGM) {
 		// immediately go to sustain mode. Hold time
@@ -141,17 +119,21 @@ static void trigger(byte which) {
 		pstatus->state = STATE_SUSTAIN;
 	}
 	// is a hold time defined?
-	else if(pstatus->max_hold_time) {
+	else if(pstatus->cur_hold_time) {
 		// start the hold phase
 		pstatus->state = STATE_HOLD;
-		pstatus->hold_timeout = pstatus->max_hold_time;
+		pstatus->hold_timeout = pstatus->cur_hold_time;
 	}
 	// is sustain defined?
 	else if(pcfg->sustain) {
 		// start the sustain phase
 		pstatus->state = STATE_SUSTAIN;
 	}
-	pwm_set(which, pstatus->max_duty);
+	else {
+		// no trigger at all 
+		duty = 0;
+	}
+	pwm_set(which, duty, pcfg->invert_output);	
 	pstatus->is_triggered = 1;
 	
 }		
@@ -164,7 +146,7 @@ static void untrigger(byte which) {
 	SWITCH_CONFIG *pcfg = &l_cfg[which];	
 	
 	if(pstatus->state == STATE_SUSTAIN) {
-		pwm_set(which, 0);
+		pwm_set(which, 0, pcfg->invert_output);	
 		pstatus->state = STATE_READY;
 	}
 	pstatus->is_triggered = 0;
@@ -178,6 +160,7 @@ static void untrigger(byte which) {
 //
 
 //////////////////////////////////////////////////////////////
+// initialise the data in the switch module
 void switch_init() {
 	for(int which = 0; which < SWITCH_MAX; ++which) {
 		memset(&l_status[which], 0, sizeof(SWITCH_STATUS));
@@ -188,38 +171,6 @@ void switch_init() {
 	}	
 }
 
-/*
-//////////////////////////////////////////////////////////////
-// Service PWM - call when main app loop is idle
-void switch_service() {
-	if(!l_pwm_phase) {
-		set_output(0, l_status[0].duty);
-		set_output(1, l_status[1].duty);
-		set_output(2, l_status[2].duty);
-		set_output(3, l_status[3].duty);
-		set_output(4, l_status[4].duty);
-		set_output(5, l_status[5].duty);
-		set_output(6, l_status[6].duty);
-		set_output(7, l_status[7].duty);
-	}
-	else {
-		if(l_pwm_phase == l_status[0].duty) set_output(0, 0);
-		if(l_pwm_phase == l_status[1].duty) set_output(1, 0);
-		if(l_pwm_phase == l_status[2].duty) set_output(2, 0);
-		if(l_pwm_phase == l_status[3].duty) set_output(3, 0);
-		if(l_pwm_phase == l_status[4].duty) set_output(4, 0);
-		if(l_pwm_phase == l_status[5].duty) set_output(5, 0);
-		if(l_pwm_phase == l_status[6].duty) set_output(6, 0);
-		if(l_pwm_phase == l_status[7].duty) set_output(7, 0);
-	}
-	++l_pwm_phase;
-	l_pwm_phase &= 0x7F; 
-}
-*/
-
-
-
-
 //////////////////////////////////////////////////////////////
 // reset all outputs to their initial state
 void switch_reset() {
@@ -229,11 +180,11 @@ void switch_reset() {
 	
 		pstatus->is_triggered = 0;
 		pstatus->state = STATE_READY;
-//		pstatus->duty = 0;
-//pstatus->duty = 10*which;
-//		pwm_set(which, 10*which);
-		pstatus->max_duty = 0xFF;
-//		pwm_set(which, 0);
+		pstatus->cur_duty = 0xFF;
+		pwm_set(which,0,pcfg->initial_output);
+		if(pcfg->initial_output) {
+			trigger(which);
+		}
 	}
 }
 
@@ -264,7 +215,7 @@ void switch_tick() {
 						// automatic untriggering at the end 
 						// of the hold timeout period
 						pstatus->state = STATE_READY;
-						untrigger(which);
+						pwm_set(which,0,pcfg->invert_output);
 					}
 				}
 				break;			
@@ -273,6 +224,7 @@ void switch_tick() {
 }
 
 //////////////////////////////////////////////////////////////
+// handle incoming MIDI note
 void switch_on_note(byte chan, byte note, byte vel) {
 
 	// cycle through each of the outputs
@@ -296,18 +248,18 @@ void switch_on_note(byte chan, byte note, byte vel) {
 				
 				// modulate the duration if needed			
 				if(pcfg->dur_mod_type == MOD_NOTE) {					
-					pstatus->max_hold_time = ((long)pcfg->hold_time * vel)/127;
+					pstatus->cur_hold_time = ((long)pcfg->hold_time * vel)/127;
 				}
 				else if(pcfg->dur_mod_type == MOD_NONE) {
-					pstatus->max_hold_time = pcfg->hold_time;
+					pstatus->cur_hold_time = pcfg->hold_time;
 				}
 
 				// modulate the duty if needed			
 				if(pcfg->pwm_mod_type == MOD_NOTE) {
-					pstatus->max_duty = 2 * vel;
+					pstatus->cur_duty = 2 * vel;
 				}
 				else if(pcfg->pwm_mod_type == MOD_NONE) {
-					pstatus->max_duty = 0xFF;
+					pstatus->cur_duty = 0xFF;
 				}
 				
 				// MIDI note ON
@@ -318,6 +270,7 @@ void switch_on_note(byte chan, byte note, byte vel) {
 }
 
 //////////////////////////////////////////////////////////////
+// handle incoming MIDI CC
 void switch_on_cc(byte chan, byte cc_no, byte value) {
 
 	// cycle through each of the outputs
@@ -329,17 +282,17 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 		if( MOD_CC == pcfg->dur_mod_type && 
 			cc_no == pcfg->dur_mod.cc.cc_no	&& 
 			chan == pcfg->dur_mod.cc.chan ) {						
-			pstatus->max_hold_time = ((long)pcfg->hold_time * value)/127;			
+			pstatus->cur_hold_time = ((long)pcfg->hold_time * value)/127;			
 		}
 
 		// handle PWM duty modulation via CC
 		if( MOD_CC == pcfg->pwm_mod_type && 
 			cc_no == pcfg->pwm_mod.cc.cc_no	&& 
 			chan == pcfg->pwm_mod.cc.chan ) {						
-			pstatus->max_duty = 2 * value;
+			pstatus->cur_duty = 2 * value;
 			if(!pstatus->is_triggered) {
 				// change duty while note is triggered
-				pwm_set(which, pstatus->max_duty);
+				pwm_set(which, pstatus->cur_duty, pcfg->invert_output);
 			}
 		}
 
@@ -364,6 +317,7 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 }
 
 //////////////////////////////////////////////////////////////
+// Handle incoming program change
 void switch_on_pgm(byte chan, byte pgm_no) {
 
 	byte is_found = 0;
@@ -394,10 +348,6 @@ void switch_on_pgm(byte chan, byte pgm_no) {
 		b<<=1;
 	}
 }
-
-
-
-
 
 //////////////////////////////////////////////////////////////
 static byte switch_cfg_port(byte which, byte param_lo, byte value_hi, byte value_lo) {
@@ -552,10 +502,13 @@ byte switch_cfg(byte param_hi, byte param_lo, byte value_hi, byte value_lo) {
 	}
 }
 
+//////////////////////////////////////////////////////////////
 byte *switch_storage(int *len) {
 	*len = sizeof(l_cfg);
 	return (byte*)&l_cfg;
 }
+
+//////////////////////////////////////////////////////////////
 byte *switch_pgm_storage(int *len) {
 	*len = sizeof(l_pgm);
 	return (byte*)&l_pgm;

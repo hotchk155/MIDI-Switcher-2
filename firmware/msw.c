@@ -22,7 +22,6 @@
 
 
 
-//#define ACTIVITY_LED_ON_TIME	10 // ms
 
 //
 // TYPE DEFS
@@ -109,8 +108,7 @@ byte sysex_value_hi = 0;
 #define LED_LONG_BLINK		255
 volatile byte g_led_timeout = 0;
 
-byte pwm[4];
-
+byte pwm_duty[8];
 
 ////////////////////////////////////////////////////////////
 // INTERRUPT SERVICE ROUTINE
@@ -190,44 +188,35 @@ void timer_init() {
 }
 
 ////////////////////////////////////////////////////////////
-void pwm_set(byte which, byte duty) {	
-
-/*
-	if(duty == 0x00) {
-		switch(which) {
-			case 4: ccp3con = 0b00000000; P_OUTE = 0; break;
-			case 5: ccp4con = 0b00000000; P_OUTF = 0; break;
-			case 6: ccp1con = 0b00000000; P_OUTG = 0; break;
-			case 7: ccp2con = 0b00000000; P_OUTH = 0; break;
+// Set PWM duty (8-bits) on one of the output channels
+// Outputs A-D uses "software" PWM
+// Outputs E-H use the PIC PWM peripheral
+void pwm_set(byte which, byte duty, byte invert) 
+{	
+	if(invert) {
+		duty = 255-duty;
+	}
+	if(pwm_duty[which] != duty)
+	{
+		pwm_duty[which] = duty;
+		switch(which) 
+		{
+			case 0: if(duty==0xFF) P_OUTA = 1; break;
+			case 1: if(duty==0xFF) P_OUTB = 1; break;
+			case 2: if(duty==0xFF) P_OUTC = 1; break;
+			case 3: if(duty==0xFF) P_OUTD = 1; break;
+			case 4:	ccpr3l = duty; break;
+			case 5:	ccpr4l = duty; break;
+			case 6:	ccpr1l = duty; break;
+			case 7:	ccpr2l = duty; break;
 		}
 	}
-	else if(duty == 0xFF) {
-		switch(which) {
-			case 4: ccp3con = 0b00000000; P_OUTE = 1; break;
-			case 5: ccp4con = 0b00000000; P_OUTF = 1; break;
-			case 6: ccp1con = 0b00000000; P_OUTG = 1; break;
-			case 7: ccp2con = 0b00000000; P_OUTH = 1; break;
-	}
-	else {
-		switch(which) {
-			case 4: ccp3con = 0b00001100; ccpr3l = duty; break;
-			case 5: ccp4con = 0b00001100; ccpr4l = duty; break;
-			case 6: ccp1con = 0b00001100; ccpr1l = duty; break;
-			case 7: ccp2con = 0b00001100; ccpr2l = duty; break;
-	}*/
 }
 
 
 ////////////////////////////////////////////////////////////
+// Configure hardware PWM using CCP modules
 void pwm_init() {
-
-	///////////////////////////////////////////////////////
-	// Configure hardware PWM using CCP modules
-
-//CCP1 = RC5
-//CCP2 = RA5
-//CCP3 = RA2
-//CCP4 = RC1
 
 	// ensure the output drivers for each
 	// of the CCPx outputs are disabled
@@ -255,7 +244,7 @@ void pwm_init() {
 	t2con = 0b00000010;
 
 	// load timer 2 period register for 255 duty cycles	
-	pr2 = 0xFF; 
+	pr2 = 0xFE; 
 	
 	// clear Timer2 interrupt flag
 	pir1.1 = 0;
@@ -271,21 +260,6 @@ void pwm_init() {
 	trisa.5 = 0;
 	trisc.1 = 0; 
 	trisc.5 = 0; 	
-	
-	
-	///////////////////////////////////////////////////////
-	// Configure emulated PWM using timers 4 and 6
-	// Fosc/4 = 4MHz 
-	// Prescaler 16 = counts at 250kHz
-	// Full PWM cycle is ~976Hz
-//	t4con = 0b00000110;
-//	t6con = 0b00000110;
-t1con = 0b01001001;
-//	pr4 = 0x7f;	// 7 bit duty cycle
-//	pr6 = 0x7f;
-	
-//	pie3.3 = 1;	// TMR6IE
-//	pie3.1 = 1; // TMR4IE
 }
 
 
@@ -483,25 +457,30 @@ void main()
 	P_WPU = 1; // weak pull up on switch input
 	option_reg.7 = 0; // weak pull up enable
 
+
 	// we are alive...
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
-
-
-
-	memset(pwm, 0, sizeof(pwm));
-	byte pwm_phase = 0;
 	
+
 	// initialise MIDI comms
-	pwm_init();
-	
+	pwm_init();	
+	// start up timer 1, which will be used to 
+	// time the PWM of ports A-D
+	t1con = 0b01000000;
+		
 	uart_init();
 	timer_init();
 	
+
+	
+	memset(pwm_duty, 0, sizeof(pwm_duty));
+
 	// enable interrupts	
 	intcon.7 = 1; //GIE
 	intcon.6 = 1; //PEIE	
 
+t1con.0 = 1;
 	switch_init();
 	
 	storage_read_patch();	
@@ -512,11 +491,6 @@ void main()
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 
-pwm[0] = 0x10;
-pwm[1] = 0x20;
-pwm[2] = 0x40;
-pwm[3] = 0x7f;
-//pwm_set(1,0x40);
 	for(;;)
 	{	
 		// once per millisecond tick event
@@ -524,7 +498,7 @@ pwm[3] = 0x7f;
 			ms_tick = 0;
 			
 		
-			//switch_tick();
+			switch_tick();
 			
 			// update LED
 			if(g_led_timeout) {
@@ -544,31 +518,7 @@ pwm[3] = 0x7f;
 		// poll for incoming MIDI data
 		byte msg = midi_in();		
 		if(msg) {
-
-
 			switch(msg & 0xF0) {
-			// REALTIME MESSAGE
-			case 0xF0:
-				switch(msg) {
-				case MIDI_SYNCH_TICK:
-					//if(!midi_ticks) {
-						//LED_2_PULSE(LED_PULSE_MIDI_BEAT);				
-					//}
-					//if(++midi_ticks>=24) {
-						//midi_ticks = 0;
-					//}
-					//gate_midi_clock(msg);
-					break;
-				case MIDI_SYNCH_START:
-					//midi_ticks = 0;
-					// fall thru
-				case MIDI_SYNCH_CONTINUE:
-				case MIDI_SYNCH_STOP:
-					//gate_midi_clock(msg);
-					break;	
-				}
-				break;
-					
 			// MIDI NOTE OFF
 			case 0x80:
 				switch_on_note(msg&0x0F, midi_params[0], 0);
@@ -576,13 +526,11 @@ pwm[3] = 0x7f;
 			// MIDI NOTE ON
 			case 0x90:
 				switch_on_note(msg&0x0F, midi_params[0], midi_params[1]);
-				break;
-				
+				break;				
 			// CONTINUOUS CONTROLLER
 			case 0xB0: 
 				switch_on_cc(msg&0x0F, midi_params[0], midi_params[1]);
-				break;
-			
+				break;			
 			// PROGRAM CHANGE
 			case 0xC0: 
 				switch_on_pgm(msg&0x0F, midi_params[0]);
@@ -590,10 +538,11 @@ pwm[3] = 0x7f;
 			}
 		}
 		
-		P_OUTA = !(tmr1h>pwm[0]);
-		P_OUTB = !(tmr1h>pwm[1]);
-		P_OUTC = !(tmr1h>pwm[2]);
-		P_OUTD = !(tmr1h>pwm[3]);
+		// manage the software PWM on outputs A-D
+		P_OUTA = pwm_duty[0] && !(tmr1h>pwm_duty[0]);
+		P_OUTB = pwm_duty[1] && !(tmr1h>pwm_duty[1]);
+		P_OUTC = pwm_duty[2] && !(tmr1h>pwm_duty[2]);
+		P_OUTD = pwm_duty[3] && !(tmr1h>pwm_duty[3]);		
 	}
 }
 

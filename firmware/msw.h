@@ -130,4 +130,4 @@ byte *switch_pgm_storage(int *len);
 
 void storage_write_patch();
 void storage_read_patch();
-void pwm_set(byte which, byte duty);
+void pwm_set(byte which, byte duty, byte invert);
