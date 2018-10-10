@@ -1,0 +1,30 @@
+[Settings]
+Active Directory=D:\GitHub\midi_switcher_2\firmware\
+Target=PIC16F1825
+Active Compiler=BoostC
+Active Config=Debug
+Last ExtIdx=1
+Last Dir=D:\GitHub\midi_switcher_2\firmware\
+Config=1
+Last Ext=c
+Profiling=0
+Snapshot=0
+Type=0
+Warnings=1
+Model=0
+[Files]
+Count=4
+File0=msw.c
+File1=msw.h
+File2=storage.c
+File3=switch.c
+[Watch]
+Count=0
+[Watchpoint]
+Count=0
+[Debugger]
+DebugFromMain=1
+[Tools]
+BoostDir=C:\Program Files (x86)\SourceBoost\
+Programmer=
+PrefixWithBuildThreadNum=0
