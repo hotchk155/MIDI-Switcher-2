@@ -40,6 +40,9 @@
 
 #define PARAML_ENV_SUSTAIN		50
 #define PARAML_ENV_HOLD			51
+#define PARAML_ENV_RELEASE		52
+
+#define PARAML_OPT_GAMMA		60
 
 #define PARAML_DUR_MOD_NONE		100
 #define PARAML_DUR_MOD_VELOCITY	101
@@ -130,4 +133,4 @@ byte *switch_pgm_storage(int *len);
 
 void storage_write_patch();
 void storage_read_patch();
-void pwm_set(byte which, byte duty, byte invert);
+void pwm_set(byte which, byte duty, byte invert, byte gamma) ;

@@ -53,6 +53,14 @@ enum {
 	STATE_SUSTAIN,		// waiting for trigger condition to end
 };
 
+enum {
+	SWF_RESET_VALUE 	= 0x01,
+	SWF_INVERT_VALUE 	= 0x02,
+	SWF_GAMMA_CORRECT 	= 0x04,
+	SWF_SUSTAIN 		= 0x08,
+	SWF_RELEASE 		= 0x10
+};
+
 //////////////////////////////////////////////////////////////
 // switch configuration
 typedef struct {
@@ -72,9 +80,7 @@ typedef struct {
 		CC_MOD cc;
 	} pwm_mod;
 
-	byte initial_output;	// the output on reset 
-	byte invert_output;		// whether the switch output is inverted
-	byte sustain;			// sustain ON/OFF flag
+	byte flags;	// the output on reset 
 	unsigned int hold_time;	// hold time in ms
 } SWITCH_CONFIG;
 
@@ -125,15 +131,15 @@ static void trigger(byte which) {
 		pstatus->hold_timeout = pstatus->cur_hold_time;
 	}
 	// is sustain defined?
-	else if(pcfg->sustain) {
+	else if(pcfg->flags & SWF_SUSTAIN) {
 		// start the sustain phase
 		pstatus->state = STATE_SUSTAIN;
 	}
 	else {
 		// no trigger at all 
 		duty = 0;
-	}
-	pwm_set(which, duty, pcfg->invert_output);	
+	}	
+	pwm_set(which, duty, pcfg->flags & SWF_INVERT_VALUE, pcfg->flags & SWF_GAMMA_CORRECT);	
 	pstatus->is_triggered = 1;
 	
 }		
@@ -146,7 +152,7 @@ static void untrigger(byte which) {
 	SWITCH_CONFIG *pcfg = &l_cfg[which];	
 	
 	if(pstatus->state == STATE_SUSTAIN) {
-		pwm_set(which, 0, pcfg->invert_output);	
+		pwm_set(which, 0, pcfg->flags & SWF_INVERT_VALUE, pcfg->flags & SWF_GAMMA_CORRECT);	
 		pstatus->state = STATE_READY;
 	}
 	pstatus->is_triggered = 0;
@@ -181,8 +187,8 @@ void switch_reset() {
 		pstatus->is_triggered = 0;
 		pstatus->state = STATE_READY;
 		pstatus->cur_duty = 0xFF;
-		pwm_set(which,0,pcfg->initial_output);
-		if(pcfg->initial_output) {
+		pwm_set(which, 0, pcfg->flags & SWF_INVERT_VALUE, pcfg->flags & SWF_GAMMA_CORRECT);	
+		if(pcfg->flags & SWF_RESET_VALUE) {
 			trigger(which);
 		}
 	}
@@ -206,8 +212,8 @@ void switch_tick() {
 					--pstatus->hold_timeout;
 				}
 				if(!pstatus->hold_timeout) {
-					// hold has timed out
-					if(pcfg->sustain && pstatus->is_triggered) {
+					// hold has timed out					
+					if((pcfg->flags & SWF_SUSTAIN) && pstatus->is_triggered) {
 						// need to sustain until end of trigger condition
 						pstatus->state = STATE_SUSTAIN;
 					}
@@ -215,7 +221,7 @@ void switch_tick() {
 						// automatic untriggering at the end 
 						// of the hold timeout period
 						pstatus->state = STATE_READY;
-						pwm_set(which,0,pcfg->invert_output);
+						pwm_set(which, 0, pcfg->flags & SWF_INVERT_VALUE, pcfg->flags & SWF_GAMMA_CORRECT);	
 					}
 				}
 				break;			
@@ -292,7 +298,7 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 			pstatus->cur_duty = 2 * value;
 			if(!pstatus->is_triggered) {
 				// change duty while note is triggered
-				pwm_set(which, pstatus->cur_duty, pcfg->invert_output);
+				pwm_set(which, pstatus->cur_duty, pcfg->flags & SWF_INVERT_VALUE, pcfg->flags & SWF_GAMMA_CORRECT);	
 			}
 		}
 
@@ -403,7 +409,12 @@ static byte switch_cfg_port(byte which, byte param_lo, byte value_hi, byte value
 		return 1;
 	/////////////////////////////////////////
 	case PARAML_ENV_SUSTAIN:
-		pcfg->sustain = !!value_lo;
+		if(value_lo) {
+			pcfg->flags |= SWF_SUSTAIN;
+		}
+		else {
+			pcfg->flags &= ~SWF_SUSTAIN;
+		}
 		return 1;
 	/////////////////////////////////////////
 	case PARAML_ENV_HOLD:	

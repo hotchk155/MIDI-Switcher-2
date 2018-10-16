@@ -1,0 +1,9 @@
+[Settings]
+Active Directory=D:\GitHub\midi_switcher_2\test_firmware\
+Target=PIC16F1825
+Active Compiler=BoostC
+Active Config=Debug
+Config=1
+[Files]
+Count=1
+File0=msw_test.c
