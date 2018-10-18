@@ -1,3 +1,6 @@
+*.tmp
+*.jbf
+
 # EAGLE
 
 *.b#1
@@ -9,7 +12,6 @@
 *.b#7
 *.b#8
 *.b#9
-*.b##
 *.s#1
 *.s#2
 *.s#3
@@ -19,7 +21,6 @@
 *.s#7
 *.s#8
 *.s#9
-*.s##
 
 # GERBER
 
@@ -32,27 +33,14 @@
 *.GTO
 *.GTP
 *.GTS
+*.GM1
+*.GBP
 *.TXT
-*.gm1
-*.gbp
-*.zip
 
-# SOURCE BOOST
+*.ZIP
 
-*.brws
-makefile.*
-*.__f
-*.asm
-*.cof
-*.lst
-*.map
-*.casm
-*.obj
-*.stat
-*.tree
 
-Backup_of*.cdr
-*.jbf
+
 ############
 ## Windows
 ############
@@ -64,3 +52,27 @@ Thumbs.db
 Desktop.ini
 
 
+##############
+## Sourceboost
+##############
+*.asm
+*.brws
+*.casm
+*.cof
+*.lst
+*.map
+*.obj
+*.stat
+*.tree
+makefile.*
+*.exe
+*.pp
+cv-strip.hex
+
+
+*.dxf
+*.odt#
+
+old/*.*
+Backup_of_*.cdr
+~*.docx
