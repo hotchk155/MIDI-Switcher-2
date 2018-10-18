@@ -1,60 +1,94 @@
+////////////////////////////////////////////////////////////
+//
+//   ///////  ///////  ////////  /////////    ////////
+//   ////  ////  ////    ////    ////   ////    ////
+//   ////  ////  ////    ////    ////   ////    ////
+//   ////        ////    ////    ////   ////    ////
+//   ////        ////  ////////  /////////    ////////
+//
+//   ////  //    // // ////// //// //   // ///// /////
+//  //     //    // //   //  //    //   // //    //  //
+//   ////  // // // //   //  //    /////// ////  /////
+//      // // // // //   //  //    //   // //    //  //
+//   ////  ///  /// //   //   //// //   // ///// //  //
+//
+// 8-port MIDI-controlled low-side DC power switcher 
+// 2018/hotchk155 - Sixty four pixels ltd
+//
+// VER 	DATE		
+// 1	18oct18		initial version
+//
+////////////////////////////////////////////////////////////
+
+//
+// INCLUDE FILES
+//
+#include <system.h>
+#include <memory.h>
+#include "msw.h"
+
 
 // CONFIG OPTIONS 
 // - RESET INPUT DISABLED
 // - WATCHDOG TIMER OFF
 // - INTERNAL OSC
-#include <system.h>
-#include <memory.h>
 #pragma DATA _CONFIG1, _FOSC_INTOSC & _WDTE_OFF & _MCLRE_OFF &_CLKOUTEN_OFF
 #pragma DATA _CONFIG2, _WRT_OFF & _PLLEN_OFF & _STVREN_ON & _BORV_19 & _LVP_OFF
 #pragma CLOCK_FREQ 16000000
 
-
-
-#include "msw.h"
-
-#define P_SWITCH	porta.3
-
-#define P_TRISA		0b11001011
-#define P_TRISC		0b11000000
-#define P_WPU		wpua.3
-
-
-
-
-
 //
-// TYPE DEFS
+// LOCAL DATA
 //
 
-//
-// GLOBAL DATA
-//
-				
-/*
-// Gamma correction table - map 7 bit CC value to 
-// 8 bit PWM brightness level									
-rom char *gamma = {
-0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 1, 1, 
-1, 1, 1, 1, 2, 2, 2, 2, 
-3, 3, 3, 3, 4, 4, 5, 5, 
-6, 6, 7, 7, 8, 8, 9, 10, 
-10, 11, 12, 13, 13, 14, 15, 16, 
-17, 18, 19, 20, 21, 22, 24, 25, 
-26, 27, 29, 30, 32, 33, 35, 36, 
-38, 39, 41, 43, 45, 47, 49, 50, 
-52, 55, 57, 59, 61, 63, 66, 68, 
-70, 73, 75, 78, 81, 83, 86, 89, 
-92, 95, 98, 101, 104, 107, 110, 114, 
-117, 120, 124, 127, 131, 135, 138, 142, 
-146, 150, 154, 158, 162, 167, 171, 175, 
-180, 184, 189, 193, 198, 203, 208, 213, 
-218, 223, 228, 233, 239, 244, 249, 255 };
-*/
+// States for sysex loading
+enum {
+	SYSEX_NONE,		// no sysex
+	SYSEX_IGNORE,	// sysex in progress, but not for us
+	SYSEX_ID0,		// expect first byte of id
+	SYSEX_ID1,		// expect second byte of id
+	SYSEX_ID2,		// expect third byte of id
+	SYSEX_PARAMH,	// expect high byte of a param number
+	SYSEX_PARAML,	// expect low byte of a param number
+	SYSEX_VALUEH,	// expect high byte of a param value
+	SYSEX_VALUEL	// expect low byte of a param value
+};
 
+// define the buffer used to receive MIDI input
+#define SZ_RXBUFFER 			64		// size of MIDI receive buffer (power of 2)
+#define SZ_RXBUFFER_MASK 		0x3F	// mask to keep an index within range of buffer
+static volatile byte rx_buffer[SZ_RXBUFFER];	// the MIDI receive buffer
+static volatile byte rx_head = 0;				// buffer data insertion index
+static volatile byte rx_tail = 0;				// buffer data retrieval index
 
-// https://learn.adafruit.com/led-tricks-gamma-correction/the-quick-fix
+// State flags used while receiving MIDI data
+static byte midi_lockout = 0;					// flag that says if MIDI is being ignored
+static byte midi_status = 0;					// current MIDI message status (running status)
+static byte midi_num_params = 0;				// number of parameters needed by current MIDI message
+static byte midi_params[2];					// parameter values of current MIDI message
+static byte midi_param = 0;					// number of params currently received
+static byte midi_ticks = 0;					// number of MIDI clock ticks received
+static byte sysex_state = SYSEX_NONE;			// whether we are currently inside a sysex block
+static byte sysex_param_hi = 0;				// parameter number MSB for data received by Sysex
+static byte sysex_param_lo = 0;				// parameter number LSB for data received by Sysex
+static byte sysex_value_hi = 0;				// parameter value MSB for data received by Sysex
+
+// Timer related stuff
+#define TIMER_0_INIT_SCALAR		5		// Timer 0 initialiser to overlow at 1ms intervals
+static volatile byte ms_tick = 0;				// once per millisecond tick flag used to synchronise stuff
+
+// LED related stuff
+#define LED_SHORT_BLINK		10
+#define LED_LONG_BLINK		255
+static volatile byte led_timeout = 0;
+
+// number of ms to hold switch for MIDI lockout
+#define LONG_PRESS_TIME		1000
+
+// PWM duty for each output
+static byte pwm_duty[8];
+
+// Gamma correction table (from Adafruit example
+// https://learn.adafruit.com/led-tricks-gamma-correction/the-quick-fix)
 rom char *gamma = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
@@ -74,68 +108,22 @@ rom char *gamma = {
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 
 };
 
-
-// PIC CONFIG BITS
-// - RESET INPUT DISABLED
-// - WATCHDOG TIMER OFF
-// - INTERNAL OSC
-
-
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 //
-// TYPES
+// PRIVATE FUNCTIONS
 //
-
-// States for sysex loading
-enum {
-	SYSEX_NONE,		// no sysex
-	SYSEX_IGNORE,	// sysex in progress, but not for us
-	SYSEX_ID0,		// expect first byte of id
-	SYSEX_ID1,		// expect second byte of id
-	SYSEX_ID2,		// expect third byte of id
-	SYSEX_PARAMH,	// expect high byte of a param number
-	SYSEX_PARAML,	// expect low byte of a param number
-	SYSEX_VALUEH,	// expect high byte of a param value
-	SYSEX_VALUEL	// expect low byte of a param value
-};
-
-//
-// LOCAL DATA
-//
-
-// define the buffer used to receive MIDI input
-#define SZ_RXBUFFER 			64		// size of MIDI receive buffer (power of 2)
-#define SZ_RXBUFFER_MASK 		0x3F	// mask to keep an index within range of buffer
-volatile byte rx_buffer[SZ_RXBUFFER];	// the MIDI receive buffer
-volatile byte rx_head = 0;				// buffer data insertion index
-volatile byte rx_tail = 0;				// buffer data retrieval index
-
-// State flags used while receiving MIDI data
-byte midi_status = 0;					// current MIDI message status (running status)
-byte midi_num_params = 0;				// number of parameters needed by current MIDI message
-byte midi_params[2];					// parameter values of current MIDI message
-char midi_param = 0;					// number of params currently received
-byte midi_ticks = 0;					// number of MIDI clock ticks received
-byte sysex_state = SYSEX_NONE;			// whether we are currently inside a sysex block
-
-// Timer related stuff
-#define TIMER_0_INIT_SCALAR		5		// Timer 0 initialiser to overlow at 1ms intervals
-volatile byte ms_tick = 0;				// once per millisecond tick flag used to synchronise stuff
-//volatile int millis = 0;				// millisecond counter
-
-byte sysex_param_hi = 0;
-byte sysex_param_lo = 0;
-byte sysex_value_hi = 0;
-
-#define LED_SHORT_BLINK		10
-#define LED_LONG_BLINK		255
-volatile byte g_led_timeout = 0;
-
-byte pwm_duty[8];
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////
 // INTERRUPT SERVICE ROUTINE
 void interrupt( void )
 {
+	/////////////////////////////////////////////////////
+	// TIMER 0 OVERFLOW
 	if(intcon.2) {
 		tmr0 = TIMER_0_INIT_SCALAR;		
 		ms_tick = 1;
@@ -154,13 +142,11 @@ void interrupt( void )
 		}
 		pir1.5 = 0;
 	}
-
 }
-
 
 ////////////////////////////////////////////////////////////
 // INITIALISE SERIAL PORT FOR MIDI
-void uart_init()
+static void uart_init()
 {
 	pir1.1 = 0;		//TXIF 		
 	pir1.5 = 0;		//RCIF
@@ -190,10 +176,9 @@ void uart_init()
 	
 }
 
-
 ////////////////////////////////////////////////////////////
-// INITIALISE TIMER
-void timer_init() {
+// INITIALISE TIMER 0 FOR MILLSECOND CLOCK
+static void timer_init() {
 	// Configure timer 0 (controls systemticks)
 	// 	timer 0 runs at 4MHz
 	// 	prescaled 1/16 = 250kHz
@@ -210,38 +195,8 @@ void timer_init() {
 }
 
 ////////////////////////////////////////////////////////////
-// Set PWM duty (8-bits) on one of the output channels
-// Outputs A-D uses "software" PWM
-// Outputs E-H use the PIC PWM peripheral
-void pwm_set(byte which, byte duty, byte invert, byte gamma_correction) 
-{	
-	if(invert) {
-		duty = 255-duty;
-	}
-	if(gamma_correction) {
-		duty = gamma[duty];
-	}
-	if(pwm_duty[which] != duty)
-	{
-		pwm_duty[which] = duty;
-		switch(which) 
-		{
-			case 0: if(duty==0xFF) P_OUTA = 1; break;
-			case 1: if(duty==0xFF) P_OUTB = 1; break;
-			case 2: if(duty==0xFF) P_OUTC = 1; break;
-			case 3: if(duty==0xFF) P_OUTD = 1; break;
-			case 4:	ccpr3l = duty; break;
-			case 5:	ccpr4l = duty; break;
-			case 6:	ccpr1l = duty; break;
-			case 7:	ccpr2l = duty; break;
-		}
-	}
-}
-
-
-////////////////////////////////////////////////////////////
-// Configure hardware PWM using CCP modules
-void pwm_init() {
+// INITIALISE PWM PERIPHERAL
+static void pwm_init() {
 
 	// ensure the output drivers for each
 	// of the CCPx outputs are disabled
@@ -287,23 +242,21 @@ void pwm_init() {
 	trisc.5 = 0; 	
 }
 
-
-
 ////////////////////////////////////////////////////////////
-void sysex_param(byte param_hi, byte param_lo, byte value_hi, byte value_lo) {
+// HANDLE A PARAMETER (MSB-LSB) VALUE (MSB-LSB) PAIR 
+static void sysex_param(byte param_hi, byte param_lo, byte value_hi, byte value_lo) {
 	switch_cfg(param_hi, param_lo, value_hi, value_lo);
 }
-void all_reset() {
+
+////////////////////////////////////////////////////////////
+// RESET EVERYTHING
+static void all_reset() {
 	switch_reset();
 }
 
-
-
-
-
 ////////////////////////////////////////////////////////////
-// GET MESSAGES FROM MIDI INPUT
-byte midi_in()
+// GET NEXT MESSAGE FROM MIDI INPUT
+static byte midi_in()
 {
 	// loop until there is no more data or
 	// we receive a full message
@@ -320,14 +273,22 @@ byte midi_in()
 		if(rx_head == rx_tail)
 			return 0;
 		
-		P_LED = 1;
-		g_led_timeout = LED_SHORT_BLINK;		
-		
 		// read the character out of buffer
 		byte ch = rx_buffer[rx_tail];
 		++rx_tail;
 		rx_tail&=SZ_RXBUFFER_MASK;
 
+		// if MIDI lockout is active then the message will
+		// simply be ignored
+		if(midi_lockout) {
+			midi_status = 0;
+			return 0;
+		}
+
+		// flash the LED
+		P_LED = 1;
+		led_timeout = LED_SHORT_BLINK;		
+				
 		// SYSTEM MESSAGE
 		if((ch & 0xf0) == 0xf0)
 		{
@@ -359,12 +320,12 @@ byte midi_in()
 					break;			
 				case SYSEX_PARAMH:	// the state we'd expect to end in
 					P_LED = 1; 
+					storage_write_patch();
 					delay_ms(250); 
 					delay_ms(250); 
 					delay_ms(250); 
 					delay_ms(250); 
 					P_LED = 0; 
-					storage_write_patch();
 					all_reset();
 					break;
 				default:	// any other state would imply bad sysex data
@@ -455,89 +416,153 @@ byte midi_in()
 	return 0;
 }
 
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+//
+// PUBLIC FUNCTIONS
+//
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+// SET PWM DUTY
+// Outputs A-D uses "software" PWM
+// Outputs E-H use the PIC PWM peripheral
+void pwm_set(byte which, byte duty, byte gamma_correction) 
+{	
+	// perform gamma table mapping if needed
+	if(gamma_correction) {
+		duty = gamma[duty];
+	}
+	// check if the duty has actually changed
+	if(pwm_duty[which] != duty)
+	{
+		// store the new duty
+		pwm_duty[which] = duty;
+		switch(which) 
+		{
+			// output 0-3, ensure fastest switch on if duty is 100
+			case 0: if(duty==0xFF) P_OUTA = 1; break;
+			case 1: if(duty==0xFF) P_OUTB = 1; break;
+			case 2: if(duty==0xFF) P_OUTC = 1; break;
+			case 3: if(duty==0xFF) P_OUTD = 1; break;
+			// output 4-7, configure the hardware peripheral
+			case 4:	ccpr3l = duty; break;
+			case 5:	ccpr4l = duty; break;
+			case 6:	ccpr1l = duty; break;
+			case 7:	ccpr2l = duty; break;
+		}
+	}
+}
 
 
 ////////////////////////////////////////////////////////////
 // MAIN
 void main()
 { 
-	int i;
-	
-	// osc control / 16MHz / internal
-	osccon = 0b01111010;
+	osccon = 0b01111010;	// osc control / 16MHz / internal
 
-	apfcon0.7 = 1; // RX is on RA1
-	apfcon0.2 = 1; // RX is on RA0
-	apfcon1.0 = 1; // CCP2 is on RA5
+	apfcon0.7 = 1; 			// RX is on RA1
+	apfcon0.2 = 1; 			// RX is on RA0
+	apfcon1.0 = 1; 			// CCP2 is on RA5
 
-	trisa = P_TRISA;
-	trisc = P_TRISC;
+	trisa = TRISA_MASK;		// set pin in/out directions
+	trisc = TRISC_MASK;
 
-	ansela = 0b00000000;
+	ansela = 0b00000000;	// disable all analog inputs
 	anselc = 0b00000000;
 
-	porta = 0;
-	portc = 0;
 	
-	P_WPU = 1; // weak pull up on switch input
-	option_reg.7 = 0; // weak pull up enable
-
+	P_WPU = 1; 				// weak pull up on switch input
+	option_reg.7 = 0; 		// weak pull up enable
 
 	// we are alive...
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 	
-
-	// initialise MIDI comms
-	pwm_init();	
-	// start up timer 1, which will be used to 
-	// time the PWM of ports A-D
-	t1con = 0b01000000;
-		
-	uart_init();
-	timer_init();
+	pwm_init();				// initialise PWM peripheral
+	t1con = 0b01000000;		// configure timer 1, used for "fake" PWM
+	timer_init();			// configure timer 0, used for millisecond clock
+	uart_init();			// configure the serial port	
 	
+	intcon.7 = 1; 			// enable interrupts
+	intcon.6 = 1; 			// enable peripheral interrupts
+	t1con.0 = 1;			// start up timer 1
 
 	
-	memset(pwm_duty, 0, sizeof(pwm_duty));
-
-	// enable interrupts	
-	intcon.7 = 1; //GIE
-	intcon.6 = 1; //PEIE	
-
-t1con.0 = 1;
-	switch_init();
-	
-	storage_read_patch();	
-	
-	switch_reset();
+	memset(pwm_duty, 0, sizeof(pwm_duty)); // clear the PWM data	
+	switch_init();			// initialise switch data	
+	storage_read_patch();	// read patch from EEPROM	
+	switch_reset();			// set initial states of outputs
 
 	// we are still alive...
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 	P_LED = 1; delay_ms(100); P_LED = 0; delay_ms(100);
 
+	// now, main app loop...
+	int switch_hold = 0;	
+	byte lockout_count = 0;	
 	for(;;)
 	{	
 		// once per millisecond tick event
 		if(ms_tick) {
 			ms_tick = 0;
 			
-		
+			// service outputs state machine
 			switch_tick();
 			
 			// update LED
-			if(g_led_timeout) {
-				if(!--g_led_timeout) {
+			if(led_timeout) {
+				if(!--led_timeout) {
 					P_LED = 0;
 				}
 			}
 			
+			// is switch pressed?
 			if(!P_SWITCH) {
-				all_reset();
-				P_LED = 1;
-				g_led_timeout = LED_LONG_BLINK;
+			
+				// was it pressed before?
+				if(!switch_hold) {
+				
+					// no, so perform a reset and clear any
+					// MIDI lockout
+					all_reset();
+					midi_lockout = 0;
+					switch_hold = 1;
+					
+					// LED long blink
+					P_LED = 1;
+					led_timeout = LED_LONG_BLINK;
+				}
+				// has it been held for long time?
+				else if(switch_hold > LONG_PRESS_TIME) {
+				
+					// MIDI lockout!
+					midi_lockout = 1;
+					lockout_count = 0;
+					
+					// LED on
+					P_LED = 1;
+					led_timeout = 0;
+				}
+				else {
+					// counting another ms of switch holdingness
+					++switch_hold;
+				}
+			}
+			else {
+				// switch is not held
+				switch_hold = 0;
 			}
 						
+			// Blink the LED in MIDI lockout mode 
+			if(midi_lockout) {
+				if(!++lockout_count) {
+					P_LED = !P_LED;
+				}
+			}
 		}
 		
 		// poll for incoming MIDI data
