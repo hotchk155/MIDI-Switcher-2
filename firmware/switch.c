@@ -119,7 +119,7 @@ typedef struct {
 // STRUCTURE TO HOLD PROGRAM CHANGE SLOT CONFIGURATION
 typedef struct {
 	byte pgm_no;				// program number to match
-	byte mask;					// bit mask of channels to switch
+	byte trigger_mask;			// bit mask of channels to switch
 } PGM_CONFIG;
 
 //
@@ -135,8 +135,9 @@ static SWITCH_CONFIG l_cfg6;
 static SWITCH_CONFIG l_cfg7;
 static SWITCH_CONFIG *l_cfg[SWITCH_MAX];	// indirection needed to prevent address truncation :|
 static DEFAULT_CONFIG l_default_cfg;		// patch info - default config
-static PGM_CONFIG l_pgm[PGM_MAX];			// patch info - program change config
 static SWITCH_STATUS l_status[SWITCH_MAX];	// current switch status
+static PGM_CONFIG l_pgm[PGM_MAX];
+
 
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -218,18 +219,19 @@ static void untrigger(byte which) {
 //////////////////////////////////////////////////////////////
 // SET UP OUTPUT FOR A PGM CHANGE MASK
 static void trigger_pgm(byte mask) {
+
+	byte b = 0x01;
 	// cycle through each of the outputs, triggering outputs
 	// that are PGM condition and which match the mask
-	byte b = 1;	
-	for(int which = 0; which < SWITCH_MAX; ++which) {
-		if(l_cfg[which]->cond_type != COND_PGM) {
+	for(int i = 0; i < SWITCH_MAX; ++i) {
+		if(l_cfg[i]->cond_type != COND_PGM) {
 			continue;
 		}		
-		if(b & mask) {
-			trigger(which);
+		if(mask & b) {
+			trigger(i);
 		}
 		else {
-			untrigger(which);
+			untrigger(i);
 		}
 		b<<=1;
 	}
@@ -345,14 +347,14 @@ static void  switch_cfg_pgm(byte which, byte param_lo, byte value_hi, byte value
 	switch(param_lo) {
 		case PARAML_PGM_MATCH: 
 			pcfg->pgm_no = value_lo;
-			pcfg->mask = 0;
+			pcfg->trigger_mask = 0;
 			break;
-		case PARAML_PGM_PORT:			
+		case PARAML_PGM_PORT:					
 			if(value_lo) {
-				pcfg->mask |= (1<<value_hi);
+				pcfg->trigger_mask |= (1<<(value_hi-1));				
 			}
 			else {
-				pcfg->mask &= ~(1<<value_hi);
+				pcfg->trigger_mask &= ~(1<<(value_hi-1));
 			}
 			break;
 	}	
@@ -403,7 +405,12 @@ void switch_reset() {
 		pstatus->state = STATE_READY;
 		
 		// clear modulation of hold time and duty
-		pstatus->cur_hold_time = pcfg->hold_time;
+		if(pcfg->flags & SWF_USE_DEFAULTS) {
+			pstatus->cur_hold_time = l_default_cfg.hold_time;
+		}
+		else {
+			pstatus->cur_hold_time = pcfg->hold_time;
+		}
 		pstatus->cur_duty = 0xFF;
 		
 		if(pcfg->cond_type == COND_ALWAYS) {
@@ -417,7 +424,7 @@ void switch_reset() {
 	}
 	
 	// set default program change status
-	trigger_pgm(l_pgm[0].mask);			
+	trigger_pgm(l_pgm[0].trigger_mask);			
 }
 
 //////////////////////////////////////////////////////////////
@@ -485,17 +492,20 @@ void switch_on_note(byte chan, byte note, byte vel) {
 				// the pulse shaping on this channel (remembering that
 				// we might be using the global default settings...)
 				byte vel_mod_dest;
+				int hold_time;
 				if(pcfg->flags & SWF_USE_DEFAULTS) {
 					vel_mod_dest = l_default_cfg.vel_mod_dest;
+					hold_time = l_default_cfg.hold_time;
 				}
 				else {
 					vel_mod_dest = pcfg->vel_mod_dest;
+					hold_time = pcfg->hold_time;
 				}
 		
 				// perform modulation based on velocity, as needed
 				switch(vel_mod_dest) {
 				case MOD_DEST_TIME:
-					pstatus->cur_hold_time = ((long)pcfg->hold_time * vel)/127;			
+					pstatus->cur_hold_time = ((long)hold_time * vel)/127;			
 					break;
 				case MOD_DEST_DUTY:
 					pstatus->cur_duty = 2 * vel;
@@ -536,17 +546,20 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 		// shaping on this switcher output(remembering that
 		// we might be using the global default settings...)
 		byte cc_mod_dest = MOD_DEST_NONE;
+		int hold_time;
 		if(pcfg->flags & SWF_USE_DEFAULTS) {
 			// establish the modulation destination for this CC on this switch
 			if((l_default_cfg.cc_mod_cc == cc_no) &&
 				IS_CHAN_MATCH(chan, l_default_cfg.cc_mod_chan, l_default_cfg.trig_chan)) {
 				cc_mod_dest = l_default_cfg.cc_mod_dest;
+				hold_time = l_default_cfg.hold_time;
 			}
 		}
 		else {
 			if((pcfg->cc_mod_cc == cc_no) &&
 				IS_CHAN_MATCH(chan, pcfg->cc_mod_chan, l_default_cfg.trig_chan)) {
 				cc_mod_dest = pcfg->cc_mod_dest;
+				hold_time = pcfg->hold_time;
 			}
 		}
 
@@ -554,7 +567,7 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 		switch(cc_mod_dest) {
 			case MOD_DEST_TIME:
 				// modulates hold time
-				pstatus->cur_hold_time = ((long)pcfg->hold_time * value)/127;			
+				pstatus->cur_hold_time = ((long)hold_time * value)/127;			
 				break;
 			case MOD_DEST_DUTY:
 				// modulates duty
@@ -592,10 +605,9 @@ void switch_on_pgm(byte chan, byte pgm_no) {
 
 	if(chan == l_default_cfg.pgm_chan) {
 		byte is_found = 0;
-		byte mask = 0;
 		for(int which = 1; which < PGM_MAX; ++which) {
 			if(l_pgm[which].pgm_no == pgm_no) {
-				trigger_pgm(l_pgm[which].mask);
+				trigger_pgm(l_pgm[which].trigger_mask);
 				return;
 			}
 		}
@@ -625,9 +637,9 @@ byte *switch_default_storage(int *len) {
 
 //////////////////////////////////////////////////////////////
 // RETURN MEMORY MAP FOR SWITCH CONFIG
-byte *switch_storage(int *len) {
-	*len = sizeof(l_cfg);
-	return (byte*)&l_cfg;
+byte *switch_storage(int which, int *len) {
+	*len = sizeof(SWITCH_CONFIG);
+	return (byte*)&l_cfg[which];
 }
 
 //////////////////////////////////////////////////////////////
@@ -637,8 +649,32 @@ byte *switch_pgm_storage(int *len) {
 	return (byte*)&l_pgm;
 }
 
+//////////////////////////////////////////////////////////////
+// SAVE PATCH INFO
+void switch_storage_write(int* addr) {
+	storage_write((byte*)&l_default_cfg, sizeof(l_default_cfg), addr);
+	storage_write((byte*)&l_cfg0, sizeof(l_cfg0), addr);
+	storage_write((byte*)&l_cfg1, sizeof(l_cfg1), addr);
+	storage_write((byte*)&l_cfg2, sizeof(l_cfg2), addr);
+	storage_write((byte*)&l_cfg3, sizeof(l_cfg3), addr);
+	storage_write((byte*)&l_cfg4, sizeof(l_cfg4), addr);
+	storage_write((byte*)&l_cfg5, sizeof(l_cfg5), addr);
+	storage_write((byte*)&l_cfg6, sizeof(l_cfg6), addr);
+	storage_write((byte*)&l_cfg7, sizeof(l_cfg7), addr);
+	storage_write((byte*)&l_pgm, sizeof(l_pgm), addr);
+}
 
-
-
-
-
+//////////////////////////////////////////////////////////////
+// READ PATCH INFO
+void switch_storage_read(int* addr) {
+	storage_read((byte*)&l_default_cfg, sizeof(l_default_cfg), addr);
+	storage_read((byte*)&l_cfg0, sizeof(l_cfg0), addr);
+	storage_read((byte*)&l_cfg1, sizeof(l_cfg1), addr);
+	storage_read((byte*)&l_cfg2, sizeof(l_cfg2), addr);
+	storage_read((byte*)&l_cfg3, sizeof(l_cfg3), addr);
+	storage_read((byte*)&l_cfg4, sizeof(l_cfg4), addr);
+	storage_read((byte*)&l_cfg5, sizeof(l_cfg5), addr);
+	storage_read((byte*)&l_cfg6, sizeof(l_cfg6), addr);
+	storage_read((byte*)&l_cfg7, sizeof(l_cfg7), addr);
+	storage_read((byte*)&l_pgm, sizeof(l_pgm), addr);
+}

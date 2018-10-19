@@ -402,9 +402,9 @@ static byte midi_in()
 						{
 						case 0x80: // note off
 						case 0x90: // note on
-						case 0xE0: // pitch bend
+						//case 0xE0: // pitch bend
 						case 0xB0: // cc
-						//case 0xD0: // channel pressure
+						case 0xC0: // program change
 							return midi_status; 
 						}
 					}
