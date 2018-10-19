@@ -54,8 +54,8 @@ enum {
 };
 
 // define the buffer used to receive MIDI input
-#define SZ_RXBUFFER 			64		// size of MIDI receive buffer (power of 2)
-#define SZ_RXBUFFER_MASK 		0x3F	// mask to keep an index within range of buffer
+#define SZ_RXBUFFER 			64				// size of MIDI receive buffer (power of 2)
+#define SZ_RXBUFFER_MASK 		0x3F			// mask to keep an index within range of buffer
 static volatile byte rx_buffer[SZ_RXBUFFER];	// the MIDI receive buffer
 static volatile byte rx_head = 0;				// buffer data insertion index
 static volatile byte rx_tail = 0;				// buffer data retrieval index
@@ -64,16 +64,16 @@ static volatile byte rx_tail = 0;				// buffer data retrieval index
 static byte midi_lockout = 0;					// flag that says if MIDI is being ignored
 static byte midi_status = 0;					// current MIDI message status (running status)
 static byte midi_num_params = 0;				// number of parameters needed by current MIDI message
-static byte midi_params[2];					// parameter values of current MIDI message
-static byte midi_param = 0;					// number of params currently received
-static byte midi_ticks = 0;					// number of MIDI clock ticks received
+static byte midi_params[2];						// parameter values of current MIDI message
+static byte midi_param = 0;						// number of params currently received
+static byte midi_ticks = 0;						// number of MIDI clock ticks received
 static byte sysex_state = SYSEX_NONE;			// whether we are currently inside a sysex block
-static byte sysex_param_hi = 0;				// parameter number MSB for data received by Sysex
-static byte sysex_param_lo = 0;				// parameter number LSB for data received by Sysex
-static byte sysex_value_hi = 0;				// parameter value MSB for data received by Sysex
+static byte sysex_param_hi = 0;					// parameter number MSB for data received by Sysex
+static byte sysex_param_lo = 0;					// parameter number LSB for data received by Sysex
+static byte sysex_value_hi = 0;					// parameter value MSB for data received by Sysex
 
 // Timer related stuff
-#define TIMER_0_INIT_SCALAR		5		// Timer 0 initialiser to overlow at 1ms intervals
+#define TIMER_0_INIT_SCALAR		5				// Timer 0 initialiser to overlow at 1ms intervals
 static volatile byte ms_tick = 0;				// once per millisecond tick flag used to synchronise stuff
 
 // LED related stuff
@@ -457,7 +457,6 @@ void pwm_set(byte which, byte duty, byte gamma_correction)
 	}
 }
 
-
 ////////////////////////////////////////////////////////////
 // MAIN
 void main()
@@ -504,6 +503,7 @@ void main()
 	// now, main app loop...
 	int switch_hold = 0;	
 	byte lockout_count = 0;	
+	byte pwm = 0;
 	for(;;)
 	{	
 		// once per millisecond tick event
@@ -589,10 +589,19 @@ void main()
 		}
 		
 		// manage the software PWM on outputs A-D
-		P_OUTA = pwm_duty[0] && !(tmr1h>pwm_duty[0]);
-		P_OUTB = pwm_duty[1] && !(tmr1h>pwm_duty[1]);
-		P_OUTC = pwm_duty[2] && !(tmr1h>pwm_duty[2]);
-		P_OUTD = pwm_duty[3] && !(tmr1h>pwm_duty[3]);		
+		if(!pwm) {
+			P_OUTA = !!pwm_duty[0];
+			P_OUTB = !!pwm_duty[1];
+			P_OUTC = !!pwm_duty[2];
+			P_OUTD = !!pwm_duty[3];
+		}
+		else {
+			if(pwm > pwm_duty[0]) P_OUTA = 0;
+			if(pwm > pwm_duty[1]) P_OUTB = 0;
+			if(pwm > pwm_duty[2]) P_OUTC = 0;
+			if(pwm > pwm_duty[3]) P_OUTD = 0;
+		}
+		++pwm;
 	}
 }
 

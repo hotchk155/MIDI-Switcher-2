@@ -678,3 +678,7 @@ void switch_storage_read(int* addr) {
 	storage_read((byte*)&l_cfg7, sizeof(l_cfg7), addr);
 	storage_read((byte*)&l_pgm, sizeof(l_pgm), addr);
 }
+
+//
+// END
+//

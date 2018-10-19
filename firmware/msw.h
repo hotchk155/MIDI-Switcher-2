@@ -29,17 +29,10 @@ G~		RC5 - RC0		A
 D		RC4 - RC1		F~
 C		RC3 - RC2		B
 */
-#define PGM_MAX 		16
-#define SWITCH_MAX 		8
-
 #define TRISA_MASK		0b11001011
 #define TRISC_MASK		0b11000000
-
 #define P_SWITCH		porta.3
-
 #define P_WPU			wpua.3
-
-
 #define P_OUTA 		latc.0
 #define P_OUTB 		latc.2
 #define P_OUTC 		latc.3
@@ -54,6 +47,10 @@ C		RC3 - RC2		B
 #define LATC_BIT_OUTB	(1<<2)
 #define LATC_BIT_OUTC	(1<<3)
 #define LATC_BIT_OUTD	(1<<4)
+
+// Program defs
+#define PGM_MAX 		16
+#define SWITCH_MAX 		8
 
 // MIDI message bytes
 #define MIDI_MTC_QTR_FRAME 		0xf1
