@@ -155,6 +155,7 @@ static void trigger(byte which) {
 
 	SWITCH_STATUS *pstatus = &l_status[which];	
 	SWITCH_CONFIG *pcfg = l_cfg[which];	
+		
 	switch(pcfg->env_type) {
 		case ENV_SUSTAIN:
 		case ENV_SUST_HOLD:
@@ -405,17 +406,24 @@ void switch_reset() {
 		SWITCH_STATUS *pstatus = &l_status[which];	
 		SWITCH_CONFIG *pcfg = l_cfg[which];	
 
+		// copy default values against any output that is 
+		// configured to use default pulse shaping
+		if(pcfg->flags & SWF_USE_DEFAULTS) {
+			pcfg->env_type 		= l_default_cfg.env_type;
+			pcfg->hold_time 	= l_default_cfg.hold_time;
+			pcfg->vel_mod_dest 	= l_default_cfg.vel_mod_dest;
+			pcfg->cc_mod_dest 	= l_default_cfg.cc_mod_dest;
+			pcfg->cc_mod_chan 	= l_default_cfg.cc_mod_chan;
+			pcfg->cc_mod_cc 	= l_default_cfg.cc_mod_cc;
+			pcfg->flags 	    = l_default_cfg.flags | SWF_USE_DEFAULTS;
+		}
+		
 		// not triggered
 		pstatus->is_triggered = 0;
 		pstatus->state = STATE_READY;
 		
 		// clear modulation of hold time and duty
-		if(pcfg->flags & SWF_USE_DEFAULTS) {
-			pstatus->cur_hold_time = l_default_cfg.hold_time;
-		}
-		else {
-			pstatus->cur_hold_time = pcfg->hold_time;
-		}
+		pstatus->cur_hold_time = pcfg->hold_time;
 		pstatus->cur_duty = 0xFF;
 		
 		if(pcfg->cond_type == COND_ALWAYS) {
@@ -493,24 +501,10 @@ void switch_on_note(byte chan, byte note, byte vel) {
 			// no check if velocity filter is passed
 			if(vel >= pcfg->value_min && vel <= pcfg->value_max) {
 			
-				// find out whether note velocity should modulate
-				// the pulse shaping on this channel (remembering that
-				// we might be using the global default settings...)
-				byte vel_mod_dest;
-				int hold_time;
-				if(pcfg->flags & SWF_USE_DEFAULTS) {
-					vel_mod_dest = l_default_cfg.vel_mod_dest;
-					hold_time = l_default_cfg.hold_time;
-				}
-				else {
-					vel_mod_dest = pcfg->vel_mod_dest;
-					hold_time = pcfg->hold_time;
-				}
-		
 				// perform modulation based on velocity, as needed
-				switch(vel_mod_dest) {
+				switch(pcfg->vel_mod_dest) {
 				case MOD_DEST_TIME:
-					pstatus->cur_hold_time = ((long)hold_time * vel)/127;			
+					pstatus->cur_hold_time = ((long)pcfg->hold_time * vel)/127;			
 					break;
 				case MOD_DEST_DUTY:
 					pstatus->cur_duty = 2 * vel;
@@ -548,42 +542,31 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 		}
 
 		// find out whether this CC should modulate the pulse
-		// shaping on this switcher output(remembering that
-		// we might be using the global default settings...)
-		byte cc_mod_dest = MOD_DEST_NONE;
-		int hold_time;
-		if(pcfg->flags & SWF_USE_DEFAULTS) {
-			// establish the modulation destination for this CC on this switch
-			if((l_default_cfg.cc_mod_cc == cc_no) &&
-				IS_CHAN_MATCH(chan, l_default_cfg.cc_mod_chan, l_default_cfg.trig_chan)) {
-				cc_mod_dest = l_default_cfg.cc_mod_dest;
-				hold_time = l_default_cfg.hold_time;
+		// shaping on this switcher output
+		if((pcfg->cc_mod_cc == cc_no) && 
+			IS_CHAN_MATCH(chan, pcfg->cc_mod_chan, l_default_cfg.trig_chan)) {
+			switch(pcfg->cc_mod_dest) {
+				case MOD_DEST_TIME:
+					// modulates hold time
+					pstatus->cur_hold_time = ((long)pcfg->hold_time * value)/127;			
+					break;
+				case MOD_DEST_DUTY:
+					// modulates duty
+					if(value > 64) {
+						pstatus->cur_duty = 1 + 2 * value; // ensure we can reach 255
+					}
+					else {
+						pstatus->cur_duty = 2 * value; 
+					}
+					
+					if(pstatus->is_triggered) {
+						// if the output is in triggered status then modulate the duty "live"
+						pwm_set(which, pstatus->cur_duty, pcfg->flags & SWF_GAMMA_CORRECT);	
+					}
+					break;
 			}
 		}
-		else {
-			if((pcfg->cc_mod_cc == cc_no) &&
-				IS_CHAN_MATCH(chan, pcfg->cc_mod_chan, l_default_cfg.trig_chan)) {
-				cc_mod_dest = pcfg->cc_mod_dest;
-				hold_time = pcfg->hold_time;
-			}
-		}
-
-		// any modulation?
-		switch(cc_mod_dest) {
-			case MOD_DEST_TIME:
-				// modulates hold time
-				pstatus->cur_hold_time = ((long)hold_time * value)/127;			
-				break;
-			case MOD_DEST_DUTY:
-				// modulates duty
-				pstatus->cur_duty = 2 * value;
-				if(pstatus->is_triggered) {
-					// if the output is in triggered status then modulate the duty "live"
-					pwm_set(which, pstatus->cur_duty, pcfg->flags & SWF_GAMMA_CORRECT);	
-				}
-				break;
-		}
-				
+		
 		// handle trigger via CC
 		if( COND_CC == pcfg->cond_type && cc_no == pcfg->trig_match &&
 			IS_CHAN_MATCH(chan, pcfg->trig_chan, l_default_cfg.trig_chan)) { 			
