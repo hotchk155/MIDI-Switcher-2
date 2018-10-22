@@ -16,7 +16,7 @@
 // 2018/hotchk155 - Sixty four pixels ltd
 //
 // VER 	DATE		
-// 1	18oct18		initial version
+// 1	22oct18		initial version
 //
 ////////////////////////////////////////////////////////////
 
