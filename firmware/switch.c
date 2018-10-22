@@ -224,14 +224,13 @@ static void trigger_pgm(byte mask) {
 	// cycle through each of the outputs, triggering outputs
 	// that are PGM condition and which match the mask
 	for(int i = 0; i < SWITCH_MAX; ++i) {
-		if(l_cfg[i]->cond_type != COND_PGM) {
-			continue;
-		}		
-		if(mask & b) {
-			trigger(i);
-		}
-		else {
-			untrigger(i);
+		if(l_cfg[i]->cond_type == COND_PGM) {
+			if(mask & b) {
+				trigger(i);
+			}
+			else {
+				untrigger(i);
+			}
 		}
 		b<<=1;
 	}
