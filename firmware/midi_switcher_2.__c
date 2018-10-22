@@ -2,10 +2,10 @@
 Active Directory=D:\GitHub\midi_switcher_2\firmware\
 Target=PIC16F1825
 Active Compiler=BoostC
-Active Config=Debug
+Active Config=Release
 Last ExtIdx=1
 Last Dir=D:\GitHub\midi_switcher_2\firmware\
-Config=1
+Config=0
 Last Ext=c
 Profiling=0
 Snapshot=0

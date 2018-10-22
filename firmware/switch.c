@@ -346,7 +346,12 @@ static void  switch_cfg_pgm(byte which, byte param_lo, byte value_hi, byte value
 	PGM_CONFIG *pcfg = &l_pgm[which];
 	switch(param_lo) {
 		case PARAML_PGM_MATCH: 
-			pcfg->pgm_no = value_lo;
+			if(value_hi) {
+				pcfg->pgm_no = value_lo; 
+			}
+			else {
+				pcfg->pgm_no = 0xFF; // disable the slot
+			}
 			pcfg->trigger_mask = 0;
 			break;
 		case PARAML_PGM_PORT:					
@@ -390,6 +395,7 @@ void switch_init() {
 	}
 	for(int which = 0; which < PGM_MAX; ++which) {
 		memset(&l_pgm[which], 0, sizeof(PGM_CONFIG));
+		l_pgm[which].pgm_no = 0xFF; // disable slot by default
 	}	
 }
 
@@ -623,8 +629,8 @@ void switch_cfg(byte param_hi, byte param_lo, byte value_hi, byte value_lo) {
 	else if(param_hi >= PARAMH_PORTA && param_hi <= PARAMH_PORTH) {
 		switch_cfg_port(param_hi - PARAMH_PORTA, param_lo, value_hi, value_lo);
 	}
-	else if(param_hi >= PARAMH_PGM_SLOT1 && param_hi <= PARAMH_PGM_SLOT16) {
-		switch_cfg_pgm(param_hi - PARAMH_PGM_SLOT1, param_lo, value_hi, value_lo);
+	else if(param_hi >= PARAMH_PGM_SLOT_BASE && param_hi <= PARAMH_PGM_SLOT_MAX) {
+		switch_cfg_pgm(param_hi - PARAMH_PGM_SLOT_BASE, param_lo, value_hi, value_lo);
 	}
 }
 
