@@ -185,7 +185,6 @@ static void trigger(byte which) {
 	pstatus->is_triggered = 1;	
 }		
 
-
 //////////////////////////////////////////////////////////////
 // END OF TRIGGER CONDITION
 static void untrigger(byte which) {
@@ -193,23 +192,26 @@ static void untrigger(byte which) {
 	SWITCH_STATUS *pstatus = &l_status[which];	
 	SWITCH_CONFIG *pcfg = l_cfg[which];	
 
-	switch(pcfg->env_type) {
-	case ENV_SUSTAIN:
-		// turn output off and go back to ready state
-		pwm_set(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);	
-		pstatus->state = STATE_READY;
-		break;
-	case ENV_SUST_HOLD:
-		// sustain is over - go to hold state
-		pstatus->hold_timeout = pstatus->cur_hold_time;
-		pstatus->state = STATE_HOLD;
-		break;	
-	case ENV_SUST_REL:
-		// sustain is over - go to release state
-		pstatus->hold_timeout = pstatus->cur_hold_time;
-		pstatus->init_hold_timeout = pstatus->cur_hold_time;
-		pstatus->state = STATE_RELEASE;
-		break;	
+	// sustain state
+	if(STATE_SUSTAIN == pstatus->state) {	
+		switch(pcfg->env_type) {
+		case ENV_SUST_HOLD:
+			// sustain is over - go to hold state
+			pstatus->hold_timeout = pstatus->cur_hold_time;
+			pstatus->state = STATE_HOLD;
+			break;	
+		case ENV_SUST_REL:
+			// sustain is over - go to release state
+			pstatus->hold_timeout = pstatus->cur_hold_time;
+			pstatus->init_hold_timeout = pstatus->cur_hold_time;
+			pstatus->state = STATE_RELEASE;
+			break;	
+		default:
+			// turn output off and go back to ready state
+			pwm_set(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);	
+			pstatus->state = STATE_READY;
+			break;
+		}	
 	}	
 	
 	// no longer triggered
