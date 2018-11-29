@@ -49,7 +49,8 @@ enum {
 	ENV_HOLD_SUST	= 2,
 	ENV_SUST_HOLD	= 3,
 	ENV_RELEASE		= 4,
-	ENV_SUST_REL	= 5
+	ENV_SUST_REL	= 5,
+	ENV_LATCH		= 6
 };
 
 // enumeration of modulation destinations for velocity and CC
@@ -108,6 +109,7 @@ typedef struct {
 // STRUCTURE TO HOLD SWITCH STATUS
 typedef struct {
 	byte is_triggered;					// whether trigger condition exists now
+	byte is_cc_in_range;				// whether CC value is within trigger range
 	byte state;							// switch cycle state
 	byte cur_duty;						// modulated duty cycle
 	unsigned int cur_hold_time;			// modulated hold time in ms
@@ -157,6 +159,15 @@ static void trigger(byte which) {
 	SWITCH_CONFIG *pcfg = l_cfg[which];	
 		
 	switch(pcfg->env_type) {
+		case ENV_LATCH:
+			if(pstatus->is_triggered) { // latched on?
+				// turn output off and go back to ready state
+				pwm_set(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);	
+				pstatus->state = STATE_READY;
+				pstatus->is_triggered = 0;
+				return;
+			}
+			// otherwise treat as sustain 
 		case ENV_SUSTAIN:
 		case ENV_SUST_HOLD:
 		case ENV_SUST_REL:
@@ -206,6 +217,10 @@ static void untrigger(byte which) {
 			pstatus->init_hold_timeout = pstatus->cur_hold_time;
 			pstatus->state = STATE_RELEASE;
 			break;	
+		case ENV_LATCH:
+			// need another trigger condition to unlatch
+			// so nothing to do at this point
+			return;
 		default:
 			// turn output off and go back to ready state
 			pwm_set(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);	
@@ -574,14 +589,15 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 			IS_CHAN_MATCH(chan, pcfg->trig_chan, l_default_cfg.trig_chan)) { 			
 
 			// check if the value is within threshold
-			if( value >= pcfg->value_min &&
-				value <= pcfg->value_max ) {
-				if(!pstatus->is_triggered) {
+			if( value >= pcfg->value_min && value <= pcfg->value_max) {
+				if(!pstatus->is_cc_in_range) {
+					pstatus->is_cc_in_range = 1;
 					trigger(which);
 				}
 			}
 			else {
-				if(pstatus->is_triggered) {
+				if(pstatus->is_cc_in_range) {
+					pstatus->is_cc_in_range = 0;
 					untrigger(which);
 				}
 			}
