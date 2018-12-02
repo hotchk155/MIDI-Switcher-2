@@ -48,6 +48,8 @@ C		RC3 - RC2		B
 #define LATC_BIT_OUTC	(1<<3)
 #define LATC_BIT_OUTD	(1<<4)
 
+#define PWM_FULL 		0xfe
+
 // Program defs
 #define PGM_MAX 		16
 #define SWITCH_MAX 		8
