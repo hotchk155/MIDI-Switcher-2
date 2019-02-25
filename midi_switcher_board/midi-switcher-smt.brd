@@ -1361,7 +1361,7 @@
 <wire x1="86.36" y1="39.116" x2="86.36" y2="38.735" width="0.254" layer="21"/>
 <text x="92.075" y="32.512" size="1.143" layer="25" font="vector" ratio="20" rot="R90">PWR SEL</text>
 <text x="84.582" y="27.051" size="1.143" layer="25" font="vector" ratio="20" rot="R180">MODE</text>
-<text x="105.791" y="13.843" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">Mini Module REV2</text>
+<text x="105.791" y="13.843" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">Mini Module REV3</text>
 <text x="105.664" y="11.176" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">hotchk155</text>
 <text x="105.664" y="8.763" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">six4pix.com/switcher</text>
 <text x="99.695" y="15.748" size="1.778" layer="51" font="vector" ratio="20">H</text>
@@ -2123,8 +2123,8 @@
 <text x="44.704" y="14.1478" size="1.143" layer="22" font="vector" ratio="20" rot="MR0">creativecommons.org/licenses/
 by-nc-sa/4.0/</text>
 <wire x1="100.3554" y1="7.493" x2="100.3554" y2="8.8138" width="0.3048" layer="21"/>
-<text x="15.8242" y="7.9756" size="1.778" layer="51" font="vector" ratio="20">POWER</text>
-<text x="104.8004" y="7.9502" size="1.778" layer="51" font="vector" ratio="20">GROUND</text>
+<text x="15.6464" y="-1.1176" size="1.778" layer="51" font="vector" ratio="20">POWER</text>
+<text x="104.8258" y="-1.1938" size="1.778" layer="51" font="vector" ratio="20">GROUND</text>
 </plain>
 <libraries>
 <library name="jasons_stuff">
@@ -3014,7 +3014,7 @@ design rules under a new name.</description>
 <contactref element="IC2" pad="14"/>
 <contactref element="C2" pad="2"/>
 <contactref element="ICSP" pad="3"/>
-<polygon width="0.254" layer="1" isolate="0.254">
+<polygon width="0.254" layer="1" isolate="0.635">
 <vertex x="10.16" y="44.45"/>
 <vertex x="10.16" y="-1.27"/>
 <vertex x="120.65" y="-1.27"/>
