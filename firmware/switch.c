@@ -39,7 +39,7 @@ enum {
 	COND_NOTE	= PARAML_TRIG_NOTE,			// output is triggered by MIDI note
 	COND_CC		= PARAML_TRIG_CC,			// output is triggered by MIDI CC
 	COND_PGM	= PARAML_TRIG_PGM,			// output is triggered by MIDI program changes
-	COND_ALWAYS = PARAML_TRIG_ALWAYS
+	COND_ALWAYS = PARAML_TRIG_ALWAYS		// output is triggered at startup
 };
 
 // enumeration of different envelope types
@@ -63,7 +63,8 @@ enum {
 // enumeration of flag bits
 enum {
 	SWF_USE_DEFAULTS 	= 0x01,
-	SWF_GAMMA_CORRECT 	= 0x02
+	SWF_GAMMA_CORRECT 	= 0x02,
+	SWF_INVERT 			= 0x04
 };
 
 // enumeration of states for a switch cycle
@@ -114,7 +115,7 @@ typedef struct {
 	byte cur_duty;						// modulated duty cycle
 	unsigned int cur_hold_time;			// modulated hold time in ms
 	unsigned int init_hold_timeout;		// the hold_time at start of release state
-	unsigned int hold_timeout;			// milliseconds left in hold mode
+	unsigned int timeout;			// milliseconds left in hold mode
 } SWITCH_STATUS;
 
 //////////////////////////////////////////////////////////////
@@ -169,7 +170,7 @@ static void on_reset(byte which) {
 
 //////////////////////////////////////////////////////////////
 // SET A SWITCHER OUTPUT
-static void set_output(byte which, byte duty, byte gamma) {
+static void set_output(byte which, byte duty, byte flags) {
 #ifdef CUSTOM_SWITCHING_01
 	if(which <= 2) {
 		byte a_status = !l_status[0].is_triggered;
@@ -189,7 +190,12 @@ static void set_output(byte which, byte duty, byte gamma) {
 		return;
 	}
 #endif	
-	pwm_set(which, duty, gamma);	
+	if(flags & SWF_INVERT) {
+		pwm_set(which, 255-duty, flags & SWF_GAMMA_CORRECT);	
+	}
+	else {	
+		pwm_set(which, duty, flags & SWF_GAMMA_CORRECT);	
+	}
 }
 
 //////////////////////////////////////////////////////////////
@@ -205,7 +211,7 @@ static void trigger(byte which) {
 				// turn output off and go back to ready state
 				pstatus->state = STATE_READY;
 				pstatus->is_triggered = 0;
-				set_output(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);							
+				set_output(which, 0, pcfg->flags);
 				return;
 			}
 			// otherwise treat as sustain 
@@ -217,7 +223,7 @@ static void trigger(byte which) {
 			break;	
 		case ENV_RELEASE:
 			// start a release curve
-			pstatus->hold_timeout = pstatus->cur_hold_time;
+			pstatus->timeout = pstatus->cur_hold_time;
 			pstatus->init_hold_timeout = pstatus->cur_hold_time;
 			pstatus->state = STATE_RELEASE;
 			break;
@@ -225,7 +231,7 @@ static void trigger(byte which) {
 		case ENV_HOLD_SUST:
 		default:
 			// start a hold 
-			pstatus->hold_timeout = pstatus->cur_hold_time;
+			pstatus->timeout = pstatus->cur_hold_time;
 			pstatus->state = STATE_HOLD;
 			break;
 	}
@@ -234,7 +240,7 @@ static void trigger(byte which) {
 	pstatus->is_triggered = 1;		
 	
 	// set output ON using modulated duty
-	set_output(which, pstatus->cur_duty, pcfg->flags & SWF_GAMMA_CORRECT);	
+	set_output(which, pstatus->cur_duty, pcfg->flags);	
 }		
 
 //////////////////////////////////////////////////////////////
@@ -249,13 +255,13 @@ static void untrigger(byte which) {
 		switch(pcfg->env_type) {
 		case ENV_SUST_HOLD:
 			// sustain is over - go to hold state
-			pstatus->hold_timeout = pstatus->cur_hold_time;
+			pstatus->timeout = pstatus->cur_hold_time;
 			pstatus->state = STATE_HOLD;
 			pstatus->is_triggered = 0;			
 			break;	
 		case ENV_SUST_REL:
 			// sustain is over - go to release state
-			pstatus->hold_timeout = pstatus->cur_hold_time;
+			pstatus->timeout = pstatus->cur_hold_time;
 			pstatus->init_hold_timeout = pstatus->cur_hold_time;
 			pstatus->is_triggered = 0;			
 			pstatus->state = STATE_RELEASE;
@@ -268,11 +274,10 @@ static void untrigger(byte which) {
 			// turn output off and go back to ready state
 			pstatus->is_triggered = 0;
 			pstatus->state = STATE_READY;
-			set_output(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);			
+			set_output(which, 0, pcfg->flags);			
 			break;
 		}	
-	}	
-		
+	}			
 }		
 
 //////////////////////////////////////////////////////////////
@@ -494,7 +499,7 @@ void switch_reset() {
 		}
 		else {
 			// or turn the output off
-			set_output(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);						
+			set_output(which, 0, pcfg->flags);						
 		}		
 	}
 	
@@ -521,10 +526,10 @@ void switch_tick() {
 			case STATE_HOLD:
 			case STATE_RELEASE:
 				// decrement the timeout
-				if(pstatus->hold_timeout) {
-					--pstatus->hold_timeout;
+				if(pstatus->timeout) {
+					--pstatus->timeout;
 				}
-				if(!pstatus->hold_timeout) {
+				if(!pstatus->timeout) {
 					// hold has timed out					
 					if(pstatus->is_triggered && pcfg->env_type == ENV_HOLD_SUST) {
 						// need to sustain until end of trigger condition
@@ -534,12 +539,12 @@ void switch_tick() {
 						// automatic untriggering at the end 
 						// of the hold timeout period
 						pstatus->state = STATE_READY;
-						set_output(which, 0, pcfg->flags & SWF_GAMMA_CORRECT);			
+						set_output(which, 0, pcfg->flags);			
 					}
 				}
 				else if(pstatus->state == STATE_RELEASE) {
-					byte duty = (((long)pstatus->cur_duty * pstatus->hold_timeout)/pstatus->init_hold_timeout);					
-					set_output(which, duty, pcfg->flags & SWF_GAMMA_CORRECT);			
+					byte duty = (((long)pstatus->cur_duty * pstatus->timeout)/pstatus->init_hold_timeout);					
+					set_output(which, duty, pcfg->flags);			
 				}
 				break;			
 		}
@@ -572,7 +577,7 @@ void switch_on_note(byte chan, byte note, byte vel) {
 				case MOD_DEST_DUTY:
 					pstatus->cur_duty = 2 * vel;
 					if(pstatus->is_triggered) {
-						set_output(which, pstatus->cur_duty, pcfg->flags & SWF_GAMMA_CORRECT);
+						set_output(which, pstatus->cur_duty, pcfg->flags);
 					}
 					break;
 				}
@@ -624,7 +629,7 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 					
 					if(pstatus->is_triggered) {
 						// if the output is in triggered status then modulate the duty "live"
-						set_output(which, pstatus->cur_duty, pcfg->flags & SWF_GAMMA_CORRECT);
+						set_output(which, pstatus->cur_duty, pcfg->flags);
 					}
 					break;
 			}

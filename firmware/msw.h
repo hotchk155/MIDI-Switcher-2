@@ -101,6 +101,7 @@ C		RC3 - RC2		B
 #define PARAML_ENV_TYPE 		51
 #define PARAML_ENV_HOLD 		52
 #define PARAML_GAMMA 			60
+#define PARAML_INVERT 			61
 #define PARAML_VEL_MOD_DEST 	70
 #define PARAML_CC_MOD_DEST 		71
 #define PARAML_CC_MOD_CHAN 		72
