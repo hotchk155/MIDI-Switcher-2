@@ -328,13 +328,9 @@ static void switch_cfg_default(byte param_lo, byte value_hi, byte value_lo) {
 	case PARAML_CC_MOD_CC:
 		l_default_cfg.cc_mod_cc = value_lo;
 		break;
-	case PARAML_GAMMA:
-		if(value_lo) {
-			l_default_cfg.flags |= SWF_GAMMA_CORRECT;
-		}
-		else {
-			l_default_cfg.flags &= ~SWF_GAMMA_CORRECT;
-		}
+	case PARAML_FLAGS:
+		l_default_cfg.flags &= SWF_USE_DEFAULTS;
+		l_default_cfg.flags |= value_lo;
 		break;
 	}
 }
@@ -392,13 +388,9 @@ static void switch_cfg_port(byte which, byte param_lo, byte value_hi, byte value
 	case PARAML_CC_MOD_CC:
 		pcfg->cc_mod_cc = value_lo;
 		break;
-	case PARAML_GAMMA:
-		if(value_lo) {
-			pcfg->flags |= SWF_GAMMA_CORRECT;
-		}
-		else {
-			pcfg->flags &= ~SWF_GAMMA_CORRECT;
-		}
+	case PARAML_FLAGS:
+		pcfg->flags &= SWF_USE_DEFAULTS;
+		pcfg->flags |= value_lo;
 		break;
 	}
 }
