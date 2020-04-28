@@ -19,8 +19,7 @@
 typedef unsigned char byte;
 
 /*
-HARDWARE DEFS
-
+TRANSISTOR BOARD
 		VDD - VSS
 H~		RA5	- RA0/PGD	TX(Not used)
 LED		RA4 - RA1/PGC	RX
@@ -29,6 +28,8 @@ G~		RC5 - RC0		A
 D		RC4 - RC1		F~
 C		RC3 - RC2		B
 */
+#ifdef TRANSISTOR_SWITCHER
+
 #define TRISA_MASK		0b11001011
 #define TRISC_MASK		0b11000000
 #define P_SWITCH		porta.3
@@ -48,6 +49,45 @@ C		RC3 - RC2		B
 #define LATC_BIT_OUTC	(1<<3)
 #define LATC_BIT_OUTD	(1<<4)
 
+#define APFCON0_MASK 	0b10000100 // RX is on RA1/TX is on RA0
+#define APFCON1_MASK 	0b00000001 // CCP2 is on RA5
+	
+#endif
+
+/*
+Relays Board
+		
+		VDD - VSS
+LED		RA5	- RA0/PGD	P7
+SW		RA4 - RA1/PGC	P6
+		VPP - RA2		P5
+RX		RC5 - RC0		P4
+P1		RC4 - RC1		P3
+P0		RC3 - RC2		P2
+*/	
+#ifdef RELAY_SWITCHER
+
+#define TRISA_MASK		0b11011111
+#define TRISC_MASK		0b11111111
+#define P_SWITCH		porta.4
+#define P_WPU			wpua.4
+#define P_LED 			lata.5
+
+#define T_OUT0		trisc.3 
+#define T_OUT1		trisc.4 
+#define T_OUT2		trisc.2
+#define T_OUT3		trisc.1 
+#define T_OUT4		trisc.0
+#define T_OUT5		trisa.2 
+#define T_OUT6		trisa.1
+#define T_OUT7		trisa.0	
+
+#define APFCON0_MASK 	0b00000000
+#define APFCON1_MASK 	0b00000000
+
+#endif
+
+#define PWM_HALF 		0x80
 #define PWM_FULL 		0xfe
 
 // Program defs

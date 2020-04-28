@@ -18,8 +18,14 @@
 // VER 	DATE		
 // 1	22oct18		initial version
 // 1.1	02dec18		add latching mode 
+// 1.2	24apr20		support relay switcher
 //
 ////////////////////////////////////////////////////////////
+
+// Exactly one of the following definitions needs to be
+// present depending on the hardware we're building for
+//#define TRANSISTOR_SWITCHER 1
+#define RELAY_SWITCHER 1
 
 //
 // INCLUDE FILES
@@ -85,8 +91,10 @@ static volatile byte led_timeout = 0;
 // number of ms to hold switch for MIDI lockout
 #define LONG_PRESS_TIME		1000
 
+#if TRANSISTOR_SWITCHER
 // PWM duty for each output
 static byte pwm_duty[8];
+#endif
 
 // Gamma correction table (from Adafruit example
 // https://learn.adafruit.com/led-tricks-gamma-correction/the-quick-fix)
@@ -197,6 +205,7 @@ static void timer_init() {
 
 ////////////////////////////////////////////////////////////
 // INITIALISE PWM PERIPHERAL
+#if TRANSISTOR_SWITCHER
 static void pwm_init() {
 
 	// ensure the output drivers for each
@@ -241,8 +250,16 @@ static void pwm_init() {
 	trisa.5 = 0;
 	trisc.1 = 0; 
 	trisc.5 = 0; 	
+	
+	// clear the PWM data	
+	memset(pwm_duty, 0, sizeof(pwm_duty)); 	
 }
-
+#endif 
+#if RELAY_SWITCHER
+static void pwm_init() {
+	// no-op
+}
+#endif 
 ////////////////////////////////////////////////////////////
 // HANDLE A PARAMETER (MSB-LSB) VALUE (MSB-LSB) PAIR 
 static void sysex_param(byte param_hi, byte param_lo, byte value_hi, byte value_lo) {
@@ -427,6 +444,7 @@ static byte midi_in()
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
+#if TRANSISTOR_SWITCHER
 ////////////////////////////////////////////////////////////
 // SET PWM DUTY
 // Outputs A-D uses "software" PWM
@@ -457,6 +475,26 @@ void pwm_set(byte which, byte duty, byte gamma_correction)
 		}
 	}
 }
+#endif
+
+#if RELAY_SWITCHER
+void pwm_set(byte which, byte duty, byte gamma_correction) 
+{	
+	byte value = !(duty>=PWM_HALF);
+	switch(which) 
+	{
+		case 0: T_OUT0 = value; break;
+		case 1: T_OUT1 = value; break;
+		case 2: T_OUT2 = value; break;
+		case 3: T_OUT3 = value; break;
+		case 4: T_OUT4 = value; break;
+		case 5: T_OUT5 = value; break;
+		case 6: T_OUT6 = value; break;
+		case 7: T_OUT7 = value; break;
+	}
+}
+#endif
+
 
 ////////////////////////////////////////////////////////////
 // MAIN
@@ -464,9 +502,8 @@ void main()
 { 
 	osccon = 0b01111010;	// osc control / 16MHz / internal
 
-	apfcon0.7 = 1; 			// RX is on RA1
-	apfcon0.2 = 1; 			// RX is on RA0
-	apfcon1.0 = 1; 			// CCP2 is on RA5
+	apfcon0 = APFCON0_MASK; // set alt pin function mux
+	apfcon1 = APFCON1_MASK;	
 
 	trisa = TRISA_MASK;		// set pin in/out directions
 	trisc = TRISC_MASK;
@@ -474,6 +511,8 @@ void main()
 	ansela = 0b00000000;	// disable all analog inputs
 	anselc = 0b00000000;
 
+	lata = 0;				// set all outputs logic low
+	latc = 0;
 	
 	P_WPU = 1; 				// weak pull up on switch input
 	option_reg.7 = 0; 		// weak pull up enable
@@ -490,9 +529,7 @@ void main()
 	intcon.7 = 1; 			// enable interrupts
 	intcon.6 = 1; 			// enable peripheral interrupts
 	t1con.0 = 1;			// start up timer 1
-
 	
-	memset(pwm_duty, 0, sizeof(pwm_duty)); // clear the PWM data	
 	switch_init();			// initialise switch data	
 	storage_read_patch();	// read patch from EEPROM	
 	switch_reset();			// set initial states of outputs
@@ -588,7 +625,8 @@ void main()
 				break;
 			}
 		}
-		
+
+#if TRANSISTOR_SWITCHER
 		// manage the software PWM on outputs A-D
 		if(!pwm) {
 			P_OUTA = !!pwm_duty[0];
@@ -603,6 +641,8 @@ void main()
 			if(pwm > pwm_duty[3]) P_OUTD = 0;
 		}
 		++pwm;
+#endif 
+		
 	}
 }
 
