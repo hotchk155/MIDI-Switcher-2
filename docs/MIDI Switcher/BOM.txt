@@ -1,0 +1,55 @@
+C1                        100n
+C2                        100n
+C3                        100n
+C4                        47u
+C5                        47u
+D1         0805DIODE      0805DIODE                 0805DIODE                                                                                             
+D2         1N4004         1N4004                    DO-VERT      DIODE                                                                                    
+D3         1N4004         1N4004                    DO-VERT      DIODE                                                                                    
+IC1        6N138          6N138                     DIL08        MOTOROLA OPTO COUPLER                                                                    
+IC2        PIC16F1825SO14 PIC16F1825SO14            SO14                                                                                                  
+IC3        LD1086         LD1086                    DPACK                                                                                                 
+L1                        LED0805
+L2                        LED0805
+L3                        LED0805
+L4                        LED0805
+L5                        LED0805
+L6                        LED0805
+L7                        LED0805
+L8                        LED0805
+L9                        LED0805
+L10                       LED0805
+MIDI_IN    DIN5PIN"       DIN5PIN"                  TRUCONN90    Female CONNECTOR                                                                         
+MODE                      10-XX                     B3F-10XX     OMRON SWITCH                                                                             
+Q1         				  MJD122
+Q2         				  MJD122
+Q3         				  MJD122
+Q4         				  MJD122
+Q5         				  MJD122
+Q6         				  MJD122
+Q7         MJD122GDPAK    MJD122         				  MJD122
+Q8         				  MJD122
+Q9                        MMBT3906
+R1                        220
+R2                        1K
+R3                        1K
+R7                        1K
+R8                        1K
+R9                        1K
+R10                       1K
+R11                       1K
+R12                       1K
+R13                       1K
+R14                       1K
+R15                       1K
+R16                       1K
+R17                       1K
+R18                       1K
+R19                       1K
+R20                       1K
+R21                       1K5
+R22                       1K5
+R23                       1K
+R24                       1K
+R25                       1K
+U$1        2.1MMJACKTHM   2.1MMJACKTHM              PJ-102A      2.1mm x 5.5mm THM DC jack with internal switch. Digikey part #PJ-102A, 4UCON part #05537 
