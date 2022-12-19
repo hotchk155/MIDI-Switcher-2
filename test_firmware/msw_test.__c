@@ -1,5 +1,5 @@
 [Settings]
-Active Directory=D:\GitHub\midi_switcher_2\test_firmware\
+Active Directory=C:\Users\jason\Dropbox\Github\MIDI-Switcher-2\test_firmware\
 Target=PIC16F1825
 Active Compiler=BoostC
 Active Config=Release
