@@ -114,7 +114,8 @@ XAble_Default();
 <td></td>
 <td title="The type of MIDI messages that triggers switching on this channel&#13;Can be a MIDI note ON message, a CC value within a range or we can &#13;select that the channel is switched by program change messages">Trigger</td>
 <td title="The MIDI channel where we listen for note and CC messages to trigger switching">Channel</td>
-<td title="In Note mode, the specific MIDI note that will trigger this channel">Note(Vel)</td>
+<td title="In Note modes, the minium MIDI note value that will trigger this channel">Note(Vel)</td>
+<td title="In Note Range mode, the maximum MIDI note that will trigger this channel">To.Note</td>
 <td title="In CC mode, this is the specific controller number that triggers the channel">CC#</td>
 <td title="In note mode these fields select the range of note velocities that can&#13;trigger the channel. In CC mode this is a range of controller values &#13;that will trigger the channel">Min.Val</td>
 <td>Max.Val</td>
@@ -138,6 +139,8 @@ for count = 1 to 8
 	RenderChan o.Key & TrigChanTag, o.TrigChan, true
 	Response.Write "</td><td>"
 	RenderNote o.Key & TrigNoteTag, o.TrigNote
+	Response.Write "</td><td>"
+	RenderNote o.Key & TrigNoteMaxTag, o.TrigNoteMax
 	Response.Write "</td><td>"
 	RenderCC o.Key & TrigCCTag, o.TrigCC
 	Response.Write "</td><td>"
@@ -169,15 +172,17 @@ function XAble_SwitchOutput(id) {
 	var trig = (document.getElementById("out" + id + "<%=TrigTypeTag%>").value);		
 	var e_any_trig = (trig != "0");
 	var e_note_trig = (trig == "1");
+	var e_note_range_trig = (trig == "5");
 	var e_cc_trig = (trig == "2");
 	var e_ovr = e_any_trig && document.getElementById("out" + id + "<%=ChangeDefaultTag%>").checked;
 	var e_modcc = (document.getElementById("out" + id + "<%=ModCCDestTag%>").value) != "0";
 
 	document.getElementById("out" + id + "<%=TrigChanTag%>").disabled = !(e_note_trig || e_cc_trig);
-	document.getElementById("out" + id + "<%=TrigNoteTag%>").disabled = !e_note_trig;
+	document.getElementById("out" + id + "<%=TrigNoteTag%>").disabled = !(e_note_trig || e_note_range_trig);
+	document.getElementById("out" + id + "<%=TrigNoteMaxTag%>").disabled = !e_note_range_trig;
 	document.getElementById("out" + id + "<%=TrigCCTag%>").disabled = !e_cc_trig;
-	document.getElementById("out" + id + "<%=TrigMaxValueTag%>").disabled = !(e_note_trig || e_cc_trig);
-	document.getElementById("out" + id + "<%=TrigMinValueTag%>").disabled = !(e_note_trig || e_cc_trig);
+	document.getElementById("out" + id + "<%=TrigMaxValueTag%>").disabled = !(e_note_trig || e_cc_trig || e_note_range_trig);
+	document.getElementById("out" + id + "<%=TrigMinValueTag%>").disabled = !(e_note_trig || e_cc_trig || e_note_range_trig);
 	document.getElementById("out" + id + "<%=ChangeDefaultTag%>").disabled = !e_any_trig;
 	document.getElementById("out" + id + "<%=EnvTypeTag%>").disabled = !e_ovr;
 	document.getElementById("out" + id + "<%=EnvHoldTimeTag%>").disabled = !e_ovr;

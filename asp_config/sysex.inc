@@ -23,6 +23,7 @@ Const PARAML_TRIG_NOTE = 1
 Const PARAML_TRIG_CC = 2
 Const PARAML_TRIG_PGM = 3
 Const PARAML_TRIG_ALWAYS = 4
+Const PARAML_TRIG_RANGE = 5
 
 Const PARAML_TRIG2_CHAN			= 10
 Const PARAML_TRIG2_VALUE_MIN	= 11
@@ -81,6 +82,7 @@ Const TrigChanTag = ".tch"
 Const TrigMaxValueTag = ".tvmax"
 Const TrigMinValueTag = ".tvmin"
 Const TrigNoteTag = ".tnote" 
+Const TrigNoteMaxTag = ".tnotemax" 
 Const TrigTypeTag = ".trig"
 
 	
@@ -212,6 +214,7 @@ Class SwitchOutput
 	Public TrigType 
 	Public TrigChan 
 	Public TrigNote 
+	Public TrigNoteMax 
 	Public TrigCC 
 	Public TrigMinValue
 	Public TrigMaxValue
@@ -230,6 +233,7 @@ Class SwitchOutput
 		Me.TrigType = PARAML_TRIG_NONE
 		Me.TrigChan = 0
 		Me.TrigNote = 36 
+		Me.TrigNoteMax = 36 
 		Me.TrigCC = 1
 		Me.TrigMinValue = 1
 		Me.TrigMaxValue = 127
@@ -248,6 +252,7 @@ Class SwitchOutput
 		Me.TrigType = ForceInt(Me.Key & TrigTypeTag)
 		Me.TrigChan = ForceInt(Me.Key & TrigChanTag)
 		Me.TrigNote = ForceInt(Me.Key & TrigNoteTag)
+		Me.TrigNoteMax = ForceInt(Me.Key & TrigNoteMaxTag)
 		Me.TrigCC = ForceInt(Me.Key & TrigCCTag)
 		Me.TrigMinValue = ForceInt(Me.Key & TrigMinValueTag)
 		Me.TrigMaxValue = ForceInt(Me.Key & TrigMaxValueTag)
@@ -262,11 +267,11 @@ Class SwitchOutput
 	End Sub	
 	'--------------------------		
 	Public Sub WriteSysex(id)					
-		If Me.TrigType = PARAML_TRIG_CC Or Me.TrigType = PARAML_TRIG_NOTE Then
+		If Me.TrigType = PARAML_TRIG_CC Or Me.TrigType = PARAML_TRIG_NOTE Or Me.TrigType = PARAML_TRIG_RANGE Then
 			If Me.TrigType = PARAML_TRIG_CC Then
 				WriteParam id, PARAML_TRIG_CC, 0, Me.TrigCC
 			Else
-				WriteParam id, PARAML_TRIG_NOTE, 0, Me.TrigNote
+				WriteParam id, Me.TrigType, Me.TrigNoteMax, Me.TrigNote
 			End If
 			WriteParam id, PARAML_TRIG2_CHAN, 0, Me.TrigChan
 			WriteParam id, PARAML_TRIG2_VALUE_MIN, 0, Me.TrigMinValue
@@ -293,8 +298,9 @@ Class SwitchOutput
 		select case p2		
 			Case PARAML_TRIG_NONE, PARAML_TRIG_PGM, PARAML_TRIG_ALWAYS
 				Me.TrigType = p2
-			Case PARAML_TRIG_NOTE
+			Case PARAML_TRIG_NOTE, PARAML_TRIG_RANGE
 				Me.TrigType = p2
+				Me.TrigNoteMax = v1
 				Me.TrigNote = v2				
 			Case PARAML_TRIG_CC
 				Me.TrigType = p2
@@ -441,6 +447,7 @@ Function InitMappings
 		Set o = New SwitchOutput
 		o.Key = "out" & i
 		o.TrigNote = 35+i
+		o.TrigNoteMax = 35+i
 		dictMappings.Add i, o
 	Next
 

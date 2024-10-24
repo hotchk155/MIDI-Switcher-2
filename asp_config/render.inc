@@ -24,6 +24,7 @@ Function RenderTrigType(tag, value)
 	Set dict = Server.CreateObject("Scripting.Dictionary")
 	dict.add "0", "(none)"
 	dict.add "1", "Note"
+	dict.add "5", "Range"
 	dict.add "2", "CC"
 	dict.add "3", "PGM"
 	dict.add "4", "Always"
