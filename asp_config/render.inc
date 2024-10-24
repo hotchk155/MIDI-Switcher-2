@@ -86,7 +86,7 @@ Function RenderValue(tag, value)
 	Response.Write "</select>"
 end function
 '====================================================================
-Function RenderEnvType(tag, value)
+Function RenderEnvType(tag, value, includeToggle)
 	Dim dict
 	Set dict = Server.CreateObject("Scripting.Dictionary")
 	dict.add "0", "Sustain"
@@ -95,6 +95,9 @@ Function RenderEnvType(tag, value)
 	dict.add "3", "Sus->Hold"
 	dict.add "4", "Release"
 	dict.add "5", "Sus->Rel"
+	If includeToggle Then
+		dict.add "6", "Toggle"
+	End If
 	RenderSelection tag, value, dict
 end function
 '====================================================================

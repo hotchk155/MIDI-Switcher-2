@@ -75,7 +75,7 @@ table {
 	Response.Write "</td><td>"
 	RenderChan o.Key & PgmChanTag, o.PgmChan, false		
 	Response.Write "</td><td>"
-	RenderEnvType o.Key & EnvTypeTag, o.EnvType
+	RenderEnvType o.Key & EnvTypeTag, o.EnvType, false
 	Response.Write "</td><td>"
 	RenderEnvHoldTime o.Key & EnvHoldTimeTag, o.EnvHoldTime
 	Response.Write "</td><td>"
@@ -150,7 +150,7 @@ for count = 1 to 8
 	Response.Write "</td><td>"
 	RenderCheckbox o.Key & ChangeDefaultTag, o.ChangeDefault
 	Response.Write "</td><td>"
-	RenderEnvType o.Key & EnvTypeTag, o.EnvType
+	RenderEnvType o.Key & EnvTypeTag, o.EnvType, true
 	Response.Write "</td><td>"
 	RenderEnvHoldTime o.Key & EnvHoldTimeTag, o.EnvHoldTime
 	Response.Write "</td><td>"
@@ -176,6 +176,7 @@ function XAble_SwitchOutput(id) {
 	var e_cc_trig = (trig == "2");
 	var e_ovr = e_any_trig && document.getElementById("out" + id + "<%=ChangeDefaultTag%>").checked;
 	var e_modcc = (document.getElementById("out" + id + "<%=ModCCDestTag%>").value) != "0";
+	var e_modenv = (document.getElementById("out" + id + "<%=EnvTypeTag%>").value) != "6";
 
 	document.getElementById("out" + id + "<%=TrigChanTag%>").disabled = !(e_note_trig || e_cc_trig);
 	document.getElementById("out" + id + "<%=TrigNoteTag%>").disabled = !(e_note_trig || e_note_range_trig);
@@ -185,16 +186,17 @@ function XAble_SwitchOutput(id) {
 	document.getElementById("out" + id + "<%=TrigMinValueTag%>").disabled = !(e_note_trig || e_cc_trig || e_note_range_trig);
 	document.getElementById("out" + id + "<%=ChangeDefaultTag%>").disabled = !e_any_trig;
 	document.getElementById("out" + id + "<%=EnvTypeTag%>").disabled = !e_ovr;
-	document.getElementById("out" + id + "<%=EnvHoldTimeTag%>").disabled = !e_ovr;
-	document.getElementById("out" + id + "<%=ModVelDestTag%>").disabled = !e_ovr;
-	document.getElementById("out" + id + "<%=ModCCDestTag%>").disabled = !e_ovr;
-	document.getElementById("out" + id + "<%=ModCCChanTag%>").disabled = !(e_ovr && e_modcc);
-	document.getElementById("out" + id + "<%=ModCCTag%>").disabled =  !(e_ovr && e_modcc);
-	document.getElementById("out" + id + "<%=GammaTag%>").disabled = !e_ovr;	
+	document.getElementById("out" + id + "<%=EnvHoldTimeTag%>").disabled = !(e_ovr && e_modenv);
+	document.getElementById("out" + id + "<%=ModVelDestTag%>").disabled = !(e_ovr && e_modenv);
+	document.getElementById("out" + id + "<%=ModCCDestTag%>").disabled = !(e_ovr && e_modenv);
+	document.getElementById("out" + id + "<%=ModCCChanTag%>").disabled = !(e_ovr && e_modenv && e_modcc);
+	document.getElementById("out" + id + "<%=ModCCTag%>").disabled =  !(e_ovr && e_modenv && e_modcc);
+	document.getElementById("out" + id + "<%=GammaTag%>").disabled = !(e_ovr && e_modenv);	
 }
 <% For count = 1 to 8 %>
 document.getElementById("out<%=count%><%=TrigTypeTag%>").onchange=function(){XAble_SwitchOutput(<%=count%>);}
 document.getElementById("out<%=count%><%=ChangeDefaultTag%>").onchange=function(){XAble_SwitchOutput(<%=count%>);}
+document.getElementById("out<%=count%><%=EnvTypeTag%>").onchange=function(){XAble_SwitchOutput(<%=count%>);}
 document.getElementById("out<%=count%><%=ModCCDestTag%>").onchange=function(){XAble_SwitchOutput(<%=count%>);}
 XAble_SwitchOutput(<%=count%>);
 <% Next %>	
