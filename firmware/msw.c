@@ -19,13 +19,14 @@
 // 1	22oct18		initial version
 // 1.1	02dec18		add latching mode 
 // 1.2	24apr20		support relay switcher
+// 1.2A 24oct24		BETA support note ranges
 //
 ////////////////////////////////////////////////////////////
 
 // Exactly one of the following definitions needs to be
 // present depending on the hardware we're building for
-//#define TRANSISTOR_SWITCHER 1
-#define RELAY_SWITCHER 1
+#define TRANSISTOR_SWITCHER 1
+//#define RELAY_SWITCHER 1
 
 //
 // INCLUDE FILES

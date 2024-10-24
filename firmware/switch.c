@@ -94,7 +94,8 @@ typedef struct {
 typedef struct {
 	byte cond_type;				// the type of external condition
 	byte trig_chan;				// trigger channel
-	byte trig_match;			// trigger note or cc
+	byte trig_match_min;		// trigger note or cc - min
+	byte trig_match_max;		// trigger note or cc - max
 	byte value_min;				// range of velocity or cc value - min
 	byte value_max;				// range of velocity or cc value - max	
 	byte env_type;				// envelope type
@@ -110,6 +111,7 @@ typedef struct {
 // STRUCTURE TO HOLD SWITCH STATUS
 typedef struct {
 	byte is_triggered;					// whether trigger condition exists now
+	byte trig_note;						// the note which caused the trigger
 	byte is_cc_in_range;				// whether CC value is within trigger range
 	byte state;							// switch cycle state
 	byte cur_duty;						// modulated duty cycle
@@ -348,7 +350,15 @@ static void switch_cfg_port(byte which, byte param_lo, byte value_hi, byte value
 	case PARAML_TRIG_NOTE:
 	case PARAML_TRIG_CC:
 		pcfg->cond_type = param_lo;
-		pcfg->trig_match = value_lo;
+		pcfg->trig_match_min = value_lo;
+		pcfg->trig_match_max = value_lo;
+		pcfg->value_min = 1;
+		pcfg->value_max = 127;
+		break;	
+	case PARAML_TRIG_NOTE_RANGE:
+		pcfg->cond_type = PARAML_TRIG_NOTE;
+		pcfg->trig_match_min = value_lo;
+		pcfg->trig_match_max = value_hi;
 		pcfg->value_min = 1;
 		pcfg->value_max = 127;
 		break;	
@@ -474,6 +484,7 @@ void switch_reset() {
 		}
 		
 		// not triggered
+		pstatus->trig_note = 0xff;
 		pstatus->is_cc_in_range = 0;
 		pstatus->is_triggered = 0;
 		pstatus->state = STATE_READY;
@@ -554,8 +565,9 @@ void switch_on_note(byte chan, byte note, byte vel) {
 								
 		// Check if this note should trigger this output channel... 
 		// First see if MIDI channel, note and mode are a match
-		if( COND_NOTE == pcfg->cond_type && note == pcfg->trig_match && 
-			IS_CHAN_MATCH(chan, pcfg->trig_chan, l_default_cfg.trig_chan)) 
+		if( COND_NOTE == pcfg->cond_type && 
+			IS_CHAN_MATCH(chan, pcfg->trig_chan, l_default_cfg.trig_chan) &&
+			(note >= pcfg->trig_match_min && note <= pcfg->trig_match_max))
 		{
 		
 			// no check if velocity filter is passed
@@ -575,13 +587,15 @@ void switch_on_note(byte chan, byte note, byte vel) {
 				}
 
 				// MIDI note ON
+				pstatus->trig_note = note;
 				trigger(which);
 			}
-			else {
+			else if(pstatus->trig_note == note) {
 				// untrigger output if currently triggered
 				if(pstatus->is_triggered) {
 					untrigger(which);
 				}
+				pstatus->trig_note = 0;
 			}
 		}
 	}
@@ -628,7 +642,7 @@ void switch_on_cc(byte chan, byte cc_no, byte value) {
 		}
 		
 		// handle trigger via CC
-		if( COND_CC == pcfg->cond_type && cc_no == pcfg->trig_match &&
+		if( COND_CC == pcfg->cond_type && cc_no == pcfg->trig_match_min &&
 			IS_CHAN_MATCH(chan, pcfg->trig_chan, l_default_cfg.trig_chan)) { 			
 
 			// check if the value is within threshold
