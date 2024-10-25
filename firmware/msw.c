@@ -19,7 +19,7 @@
 // 1	22oct18		initial version
 // 1.1	02dec18		add latching mode 
 // 1.2	24apr20		support relay switcher
-// 1.2A 24oct24		BETA support note ranges
+// 1.3  24oct24		BETA support note ranges
 //
 ////////////////////////////////////////////////////////////
 

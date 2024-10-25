@@ -178,7 +178,7 @@ function XAble_SwitchOutput(id) {
 	var e_modcc = (document.getElementById("out" + id + "<%=ModCCDestTag%>").value) != "0";
 	var e_modenv = (document.getElementById("out" + id + "<%=EnvTypeTag%>").value) != "6";
 
-	document.getElementById("out" + id + "<%=TrigChanTag%>").disabled = !(e_note_trig || e_cc_trig);
+	document.getElementById("out" + id + "<%=TrigChanTag%>").disabled = !(e_note_trig || e_note_range_trig || e_cc_trig);
 	document.getElementById("out" + id + "<%=TrigNoteTag%>").disabled = !(e_note_trig || e_note_range_trig);
 	document.getElementById("out" + id + "<%=TrigNoteMaxTag%>").disabled = !e_note_range_trig;
 	document.getElementById("out" + id + "<%=TrigCCTag%>").disabled = !e_cc_trig;
