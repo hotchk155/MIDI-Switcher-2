@@ -54,6 +54,7 @@
 <layer number="54" name="bGND_GNDA" color="1" fill="9" visible="no" active="no"/>
 <layer number="56" name="wert" color="7" fill="1" visible="no" active="no"/>
 <layer number="57" name="tCAD" color="7" fill="1" visible="no" active="no"/>
+<layer number="90" name="Modules" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="91" name="Nets" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="92" name="Busses" color="1" fill="1" visible="yes" active="yes"/>
 <layer number="93" name="Pins" color="2" fill="1" visible="no" active="yes"/>
@@ -12165,6 +12166,24 @@ With round pins</description>
 <smd name="5" x="-1.778" y="0.595" dx="2.286" dy="2.54" layer="1"/>
 <smd name="6" x="1.778" y="0.595" dx="2.286" dy="2.54" layer="1"/>
 </package>
+<package name="1X01W">
+<description>&lt;b&gt;PIN HEADER&lt;/b&gt;</description>
+<wire x1="-0.635" y1="1.27" x2="0.635" y2="1.27" width="0.1524" layer="21"/>
+<wire x1="0.635" y1="1.27" x2="1.27" y2="0.635" width="0.1524" layer="21"/>
+<wire x1="1.27" y1="0.635" x2="1.27" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="1.27" y1="-0.635" x2="0.635" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="-1.27" y1="0.635" x2="-1.27" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="-0.635" y1="1.27" x2="-1.27" y2="0.635" width="0.1524" layer="21"/>
+<wire x1="-1.27" y1="-0.635" x2="-0.635" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="0.635" y1="-1.27" x2="-0.635" y2="-1.27" width="0.1524" layer="21"/>
+<pad name="1" x="0" y="0" drill="1.1" diameter="2" shape="octagon"/>
+<text x="-1.3462" y="1.8288" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="-1.27" y="-3.175" size="1.27" layer="27">&gt;VALUE</text>
+<rectangle x1="-0.254" y1="-0.254" x2="0.254" y2="0.254" layer="51"/>
+</package>
+<package name="PINHEADPAD">
+<smd name="P$1" x="0" y="0" dx="4" dy="4" layer="1" roundness="25"/>
+</package>
 </packages>
 <symbols>
 <symbol name="NPN-DAR">
@@ -12214,6 +12233,15 @@ With round pins</description>
 <wire x1="10.16" y1="-7.62" x2="10.16" y2="2.54" width="0.254" layer="94"/>
 <wire x1="10.16" y1="2.54" x2="-10.16" y2="2.54" width="0.254" layer="94"/>
 </symbol>
+<symbol name="PINHD1">
+<wire x1="-6.35" y1="-2.54" x2="1.27" y2="-2.54" width="0.4064" layer="94"/>
+<wire x1="1.27" y1="-2.54" x2="1.27" y2="2.54" width="0.4064" layer="94"/>
+<wire x1="1.27" y1="2.54" x2="-6.35" y2="2.54" width="0.4064" layer="94"/>
+<wire x1="-6.35" y1="2.54" x2="-6.35" y2="-2.54" width="0.4064" layer="94"/>
+<text x="-6.35" y="3.175" size="1.778" layer="95">&gt;NAME</text>
+<text x="-6.35" y="-5.08" size="1.778" layer="96">&gt;VALUE</text>
+<pin name="1" x="-2.54" y="0" visible="pad" length="short" direction="pas" function="dot"/>
+</symbol>
 </symbols>
 <devicesets>
 <deviceset name="MJD122G" prefix="Q">
@@ -12244,6 +12272,30 @@ With round pins</description>
 <connect gate="G$1" pin="GND" pad="1"/>
 <connect gate="G$1" pin="IN" pad="3"/>
 <connect gate="G$1" pin="OUT" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="PINHD-1X1" prefix="JP" uservalue="yes">
+<description>&lt;b&gt;PIN HEADER&lt;/b&gt;</description>
+<gates>
+<gate name="G$1" symbol="PINHD1" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="1X01W">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="SMT" package="PINHEADPAD">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
 </connects>
 <technologies>
 <technology name=""/>
@@ -15422,21 +15474,21 @@ In this library the device names are the same as the pin names of the symbols, t
 <part name="R7" library="rcl" deviceset="R-EU_" device="R0805"/>
 <part name="R2" library="rcl" deviceset="R-EU_" device="R0805"/>
 <part name="ICSP" library="microbuilder" deviceset="HEADER-1X6" device=""/>
-<part name="OP1-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP2-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP3-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP4-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP5-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP6-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP7-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP8-" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP1+" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP2+" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP3+" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP4+" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP5+" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP7+" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="OP8+" library="adafruit" deviceset="PINHD-1X1" device=""/>
+<part name="OP1-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP2-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP3-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP4-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP5-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP6-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP7-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP8-" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP1+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP2+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP3+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP4+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP5+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP7+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="OP8+" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
 <part name="C1" library="rcl" deviceset="C-EU" device="C0805"/>
 <part name="C3" library="rcl" deviceset="C-EU" device="C0805"/>
 <part name="L10" library="led" deviceset="LED" device="CHIP-LED0805"/>
@@ -15473,10 +15525,10 @@ In this library the device names are the same as the pin names of the symbols, t
 <part name="C5" library="rcl" deviceset="CPOL-EU" device="E2.5-6"/>
 <part name="C4" library="rcl" deviceset="CPOL-EU" device="E2.5-7"/>
 <part name="D3" library="jasons_stuff" deviceset="1N4004" device=""/>
-<part name="POWER+1" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="POWER+2" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="POWER-1" library="adafruit" deviceset="PINHD-1X1" device=""/>
-<part name="POWER-2" library="adafruit" deviceset="PINHD-1X1" device=""/>
+<part name="POWER+1" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="POWER+2" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="POWER-1" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
+<part name="POWER-2" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
 <part name="U$1" library="adafruit" deviceset="2.1MMJACK" device="THM"/>
 <part name="D2" library="jasons_stuff" deviceset="1N4004" device=""/>
 <part name="Q9" library="transistor" deviceset="*-PNP-" device="SOT23-BEC" technology="MMBT3906LT1"/>
@@ -15508,7 +15560,7 @@ In this library the device names are the same as the pin names of the symbols, t
 <part name="GND16" library="supply1" deviceset="GND" device=""/>
 <part name="GND17" library="supply1" deviceset="GND" device=""/>
 <part name="GND18" library="supply1" deviceset="GND" device=""/>
-<part name="OP8+1" library="adafruit" deviceset="PINHD-1X1" device=""/>
+<part name="OP8+1" library="jason_eagle6" deviceset="PINHD-1X1" device=""/>
 </parts>
 <sheets>
 <sheet>

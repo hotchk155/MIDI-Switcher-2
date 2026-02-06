@@ -8,7 +8,7 @@
 </settings>
 <grid distance="1" unitdist="mil" unit="mil" style="lines" multiple="1" display="yes" altdistance="0.005" altunitdist="inch" altunit="inch"/>
 <layers>
-<layer number="1" name="Top" color="4" fill="1" visible="no" active="yes"/>
+<layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
 <layer number="3" name="Route3" color="4" fill="3" visible="no" active="no"/>
 <layer number="14" name="Route14" color="1" fill="6" visible="no" active="no"/>
@@ -54,6 +54,7 @@
 <layer number="54" name="bGND_GNDA" color="1" fill="9" visible="no" active="no"/>
 <layer number="56" name="wert" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="57" name="tCAD" color="7" fill="1" visible="no" active="no"/>
+<layer number="90" name="Modules" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="91" name="Nets" color="2" fill="1" visible="no" active="no"/>
 <layer number="92" name="Busses" color="1" fill="1" visible="no" active="no"/>
 <layer number="93" name="Pins" color="2" fill="1" visible="no" active="no"/>
@@ -1361,7 +1362,7 @@
 <wire x1="86.36" y1="39.116" x2="86.36" y2="38.735" width="0.254" layer="21"/>
 <text x="92.075" y="32.512" size="1.143" layer="25" font="vector" ratio="20" rot="R90">PWR SEL</text>
 <text x="84.582" y="27.051" size="1.143" layer="25" font="vector" ratio="20" rot="R180">MODE</text>
-<text x="105.791" y="13.843" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">Mini Module REV3</text>
+<text x="105.791" y="13.843" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">PCB REV 3B</text>
 <text x="105.664" y="11.176" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">hotchk155</text>
 <text x="105.664" y="8.763" size="1.778" layer="22" font="vector" ratio="20" rot="MR0">six4pix.com/switcher</text>
 <text x="99.695" y="15.748" size="1.778" layer="51" font="vector" ratio="20">H</text>
@@ -2486,6 +2487,21 @@ grid 2.54 mm, diameter 7 mm</description>
 <smd name="5" x="-1.778" y="0.595" dx="2.286" dy="2.54" layer="1"/>
 <smd name="6" x="1.778" y="0.595" dx="2.286" dy="2.54" layer="1"/>
 </package>
+<package name="1X01W">
+<description>&lt;b&gt;PIN HEADER&lt;/b&gt;</description>
+<wire x1="-0.635" y1="1.27" x2="0.635" y2="1.27" width="0.1524" layer="21"/>
+<wire x1="0.635" y1="1.27" x2="1.27" y2="0.635" width="0.1524" layer="21"/>
+<wire x1="1.27" y1="0.635" x2="1.27" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="1.27" y1="-0.635" x2="0.635" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="-1.27" y1="0.635" x2="-1.27" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="-0.635" y1="1.27" x2="-1.27" y2="0.635" width="0.1524" layer="21"/>
+<wire x1="-1.27" y1="-0.635" x2="-0.635" y2="-1.27" width="0.1524" layer="21"/>
+<wire x1="0.635" y1="-1.27" x2="-0.635" y2="-1.27" width="0.1524" layer="21"/>
+<pad name="1" x="0" y="0" drill="1.1" diameter="2" shape="octagon"/>
+<text x="-1.3462" y="1.8288" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="-1.27" y="-3.175" size="1.27" layer="27">&gt;VALUE</text>
+<rectangle x1="-0.254" y1="-0.254" x2="0.254" y2="0.254" layer="51"/>
+</package>
 </packages>
 </library>
 <library name="led">
@@ -2812,49 +2828,49 @@ design rules under a new name.</description>
 <element name="ICSP" library="microbuilder" package="1X06_OVAL" value="" x="57.15" y="38.1" smashed="yes">
 <attribute name="VALUE" x="49.53" y="34.925" size="1.27" layer="27"/>
 </element>
-<element name="OP1-" library="adafruit" package="1X01" value="" x="97" y="5.08" smashed="yes">
+<element name="OP1-" library="jason_eagle6" package="1X01W" value="" x="97" y="5.08" smashed="yes">
 <attribute name="VALUE" x="95.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP2-" library="adafruit" package="1X01" value="" x="87" y="5.08" smashed="yes">
+<element name="OP2-" library="jason_eagle6" package="1X01W" value="" x="87" y="5.08" smashed="yes">
 <attribute name="VALUE" x="85.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP3-" library="adafruit" package="1X01" value="" x="77" y="5.08" smashed="yes">
+<element name="OP3-" library="jason_eagle6" package="1X01W" value="" x="77" y="5.08" smashed="yes">
 <attribute name="VALUE" x="75.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP4-" library="adafruit" package="1X01" value="" x="67" y="5.08" smashed="yes">
+<element name="OP4-" library="jason_eagle6" package="1X01W" value="" x="67" y="5.08" smashed="yes">
 <attribute name="VALUE" x="65.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP5-" library="adafruit" package="1X01" value="" x="57" y="5.08" smashed="yes">
+<element name="OP5-" library="jason_eagle6" package="1X01W" value="" x="57" y="5.08" smashed="yes">
 <attribute name="VALUE" x="55.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP6-" library="adafruit" package="1X01" value="" x="47" y="5.08" smashed="yes">
+<element name="OP6-" library="jason_eagle6" package="1X01W" value="" x="47" y="5.08" smashed="yes">
 <attribute name="VALUE" x="45.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP7-" library="adafruit" package="1X01" value="" x="37" y="5.08" smashed="yes">
+<element name="OP7-" library="jason_eagle6" package="1X01W" value="" x="37" y="5.08" smashed="yes">
 <attribute name="VALUE" x="35.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP8-" library="adafruit" package="1X01" value="" x="27" y="5.08" smashed="yes">
+<element name="OP8-" library="jason_eagle6" package="1X01W" value="" x="27" y="5.08" smashed="yes">
 <attribute name="VALUE" x="25.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP1+" library="adafruit" package="1X01" value="" x="32" y="5.08" smashed="yes">
+<element name="OP1+" library="jason_eagle6" package="1X01W" value="" x="32" y="5.08" smashed="yes">
 <attribute name="VALUE" x="30.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP2+" library="adafruit" package="1X01" value="" x="102" y="5.08" smashed="yes">
+<element name="OP2+" library="jason_eagle6" package="1X01W" value="" x="102" y="5.08" smashed="yes">
 <attribute name="VALUE" x="100.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP3+" library="adafruit" package="1X01" value="" x="92" y="5.08" smashed="yes">
+<element name="OP3+" library="jason_eagle6" package="1X01W" value="" x="92" y="5.08" smashed="yes">
 <attribute name="VALUE" x="90.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP4+" library="adafruit" package="1X01" value="" x="82" y="5.08" smashed="yes">
+<element name="OP4+" library="jason_eagle6" package="1X01W" value="" x="82" y="5.08" smashed="yes">
 <attribute name="VALUE" x="80.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP5+" library="adafruit" package="1X01" value="" x="72" y="5.08" smashed="yes">
+<element name="OP5+" library="jason_eagle6" package="1X01W" value="" x="72" y="5.08" smashed="yes">
 <attribute name="VALUE" x="70.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP7+" library="adafruit" package="1X01" value="" x="52" y="5.08" smashed="yes">
+<element name="OP7+" library="jason_eagle6" package="1X01W" value="" x="52" y="5.08" smashed="yes">
 <attribute name="VALUE" x="50.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="OP8+" library="adafruit" package="1X01" value="" x="42" y="5.08" smashed="yes">
+<element name="OP8+" library="jason_eagle6" package="1X01W" value="" x="42" y="5.08" smashed="yes">
 <attribute name="VALUE" x="40.73" y="1.905" size="1.27" layer="27"/>
 </element>
 <element name="C1" library="rcl" package="C0805" value="" x="60.833" y="34.29" smashed="yes">
@@ -2972,16 +2988,16 @@ design rules under a new name.</description>
 <element name="D3" library="jasons_stuff" package="DO-VERT" value="1N4004" x="100.457" y="35.306" smashed="yes" rot="R180">
 <attribute name="NAME" x="105.029" y="35.814" size="1.143" layer="25" font="vector" ratio="20" rot="R180"/>
 </element>
-<element name="POWER+1" library="adafruit" package="1X01" value="" x="22" y="5.08" smashed="yes">
+<element name="POWER+1" library="jason_eagle6" package="1X01W" value="" x="22" y="5.08" smashed="yes">
 <attribute name="VALUE" x="20.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="POWER+2" library="adafruit" package="1X01" value="" x="17" y="5.08" smashed="yes">
+<element name="POWER+2" library="jason_eagle6" package="1X01W" value="" x="17" y="5.08" smashed="yes">
 <attribute name="VALUE" x="15.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="POWER-1" library="adafruit" package="1X01" value="" x="112" y="5.08" smashed="yes">
+<element name="POWER-1" library="jason_eagle6" package="1X01W" value="" x="112" y="5.08" smashed="yes">
 <attribute name="VALUE" x="110.73" y="1.905" size="1.27" layer="27"/>
 </element>
-<element name="POWER-2" library="adafruit" package="1X01" value="" x="107" y="5.08" smashed="yes">
+<element name="POWER-2" library="jason_eagle6" package="1X01W" value="" x="107" y="5.08" smashed="yes">
 <attribute name="VALUE" x="105.73" y="1.905" size="1.27" layer="27"/>
 </element>
 <element name="U$1" library="adafruit" package="PJ-102A" value="2.1MMJACKTHM" x="111.379" y="36.83"/>
@@ -3005,7 +3021,7 @@ design rules under a new name.</description>
 <element name="JP3" library="pinhead" package="1X03" value="" x="93.98" y="35.941" smashed="yes" rot="R270">
 <attribute name="VALUE" x="90.805" y="39.751" size="1.27" layer="27" rot="R270"/>
 </element>
-<element name="OP8+1" library="adafruit" package="1X01" value="" x="62" y="5.08" smashed="yes">
+<element name="OP8+1" library="jason_eagle6" package="1X01W" value="" x="62" y="5.08" smashed="yes">
 <attribute name="VALUE" x="60.73" y="1.905" size="1.27" layer="27"/>
 </element>
 </elements>
