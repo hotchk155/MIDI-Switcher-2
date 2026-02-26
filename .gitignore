@@ -78,3 +78,6 @@ cv-strip.hex
 old/*.*
 Backup_of_*.cdr
 ~*.docx
+/firmware_xc8/_build
+/firmware_xc8/cmake
+/firmware_xc8/out
